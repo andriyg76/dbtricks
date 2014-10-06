@@ -13,20 +13,17 @@ Usage::
 
 The script splits the dump into the following files:
 
-| ``00000_prologue.sql``:
-    everything up to the first COPY
-| ``0000X_<schema>_<table>_00001.sql``
-| ``0000X_<schema>_<table>_00002.sql``
-| :
-| :
-| ``000YY_<schemax>_<tabley>_00001.sql``
-    COPY data for each table *sorted by the first field, and second field*, splitted to chunks near specified maximum size.
-| ``99999_epilogue.sql``:
-    everything after the last COPY
+    0000_prologue.sql -everything up to the first COPY
+    000X_<schema>_<table>_0001.sql
+    000X_<schema>_<table>_0002.sql
+    :
+    :
+    00YY_<schemax>_<tabley>_0001.sql - COPY/INSERT data for each table *sorted by the first field, and second fields*, splitted to chunks near specified maximum size.
+    9999_epilogue.sql - everything after the last COPY
 
-for mysql files will be numbered 00001_<tabley>_00001.sql
+for mysql files will be numbered without schema ``00001_<tabley>_00001.sql``
 
-The files for table data are numbered uniquely, and order number is stored in .pgtricks file.
+The files for table data are numbered uniquely, and first, order number assign is stored in .pgtricks file.
 files can be used to re-create the database::
 
     $ cat *.sql | psql <database>
