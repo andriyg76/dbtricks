@@ -6,7 +6,7 @@ Usage::
 
     python (pg_dump|mysdlump)_splitsort.py -v --max=max_datachunk_in_bytes <filename>.sql
         -v - Verbose output
-        --max - maximum size of dumped data in one chunk
+        --max - maximum size of dumped data in one chunk [by default - 5MB]
 
 The script splits the dump into the following files:
 
