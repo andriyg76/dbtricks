@@ -4,7 +4,7 @@ import sys
 import re
 
 
-COPY_RE = re.compile(r'COPY .*? \(.*?\) FROM stdin;\n$')
+COPY_RE = re.compile(r'^INSERT INTO .*? \(.*?\) VALUES\n$')
 
 
 def try_float(s):
@@ -25,9 +25,10 @@ def lines_compare(l1, l2):
         return lines_compare(p1[1], p2[1])
     return result
 
-DATA_COMMENT_RE = re.compile('-- Data for Name: (?P<table>.*?); '
-                             'Type: TABLE DATA; '
-                             'Schema: (?P<schema>.*?);')
+DATA_COMMENT_RE = re.compile('--'
+                             '-- Dumping data for table `(?P<table>.*?)`'
+                             '--'
+                             )
 
 
 class Matcher(object):
@@ -66,9 +67,6 @@ def split_sql_file(sql_file_path):
     for line in file(sql_file_path):
         if copy_lines is None:
             if line in ('\n', '--\n'):
-                buf.append(line)
-            elif line.startswith('SET search_path = '):
-                flush()
                 buf.append(line)
             else:
                 if matcher.match(DATA_COMMENT_RE, line):
