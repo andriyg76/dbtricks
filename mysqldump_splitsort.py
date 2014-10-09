@@ -2,6 +2,7 @@
 
 import sys
 import re
+import importer
 
 
 COPY_RE = re.compile(r'^INSERT INTO .*? \(.*?\) VALUES\n$')
@@ -97,4 +98,4 @@ def split_sql_file(sql_file_path):
 # split_sql_file()
 
 if __name__ == '__main__':
-    split_sql_file(sys.argv[1])
+    split_sql_file(importer.create_argsparser())
