@@ -49,17 +49,14 @@ def get_order_number(settings, table_name, previous_table):
 
     p_order = get_prev_table_order()
     if not p_order:
-        raise ValueError("previous_table % has no order defined" (previous_table,) )
+        raise ValueError("previous_table % has no order defined" % (previous_table,))
 
-    try:
-        next_order = min([order for key, order in settings if order > p_order])
-    except ValueError:
-        next_order = 0
-
-    if not next_order:
+    next_tables = [settings[val] for val in settings if settings[val] > p_order]
+    if not next_tables:
         order = p_order + 100
     else:
-        order, remain = (p_order + next_order) % 2
+        next_order = min(next_tables)
+        order = (p_order + next_order) // 2
 
     settings[table_name] = order
     return order
