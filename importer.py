@@ -31,3 +31,35 @@ def create_argsparser():
     __verbose = args.v
 
     return args
+
+
+def get_order_number(settings, table_name, previous_table):
+    def get_prev_table_order():
+        for key in settings:
+            if previous_table == key:
+                return settings[key]
+
+    for key in settings:
+        if table_name == key:
+            return settings[key]
+
+    if not previous_table:
+        settings[table_name] = 100
+        return 100
+
+    p_order = get_prev_table_order()
+    if not p_order:
+        raise ValueError("previous_table % has no order defined" (previous_table,) )
+
+    try:
+        next_order = min([order for key, order in settings if order > p_order])
+    except ValueError:
+        next_order = 0
+
+    if not next_order:
+        order = p_order + 100
+    else:
+        order, remain = (p_order + next_order) % 2
+
+    settings[table_name] = order
+    return order
