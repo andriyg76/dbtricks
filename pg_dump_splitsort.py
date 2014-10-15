@@ -24,7 +24,7 @@ def _lines_compare(l1, l2):
     p2 = l2.split('\t', 1)
     result = cmp(_try_as_float(p1[0]), _try_as_float(p2[0]))
     if not result and len(p1) > 1 and len(p2) > 1:
-        return _lines_compare(_try_as_float(p1[1]), _try_as_float(p2[1]))
+        return _lines_compare(p1[1], p2[1])
     return result
 
 
