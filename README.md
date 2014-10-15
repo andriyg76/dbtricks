@@ -30,4 +30,3 @@ files can be used to re-create the database::
 
 
     $ cat *.sql | mysql -d <database>
-
