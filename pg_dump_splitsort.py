@@ -1,8 +1,8 @@
 #!/usr/bin/env python2.7
+
 import heapq
 import json
 import os
-from pprint import pprint
 
 import re
 import tempfile

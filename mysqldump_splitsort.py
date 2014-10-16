@@ -1,4 +1,5 @@
 # !/usr/bin/env python2.7
+
 import heapq
 import json
 import os
@@ -31,14 +32,13 @@ def _get_first_value(line):
     if not line:
         return None, None
     if line[0] == '\'' or line[0] == '\"':
-
         last = 1
         while True:
             pos = line.find(line[0], last)
             if pos < 0:
                 raise ValueError('Can\'t split')
             if pos == 1:
-                head, separator, tail = line[2:].rpartition(',')
+                head, separator, tail = line[2:].partition(',')
                 return '', _clean_start_spaces(tail)
             elif line[pos - 1] == '\\':
                 last = pos + 1
@@ -47,14 +47,14 @@ def _get_first_value(line):
                 last = pos + 2
                 continue
             else:
-                value = line[1:pos - 1]
-                head, separator, tail = line[pos + 1:].rpartition(',')
+                value = line[1:pos]
+                head, separator, tail = line[pos + 1:].partition(',')
                 return value, _clean_start_spaces(tail)
         # finding closing quote
     else:
-        head, separator, tail = line.rpartition(',')
-        if not head and not separator:
-            return tail, None
+        head, separator, tail = line.partition(',')
+        if not tail and not separator:
+            return head, None
         else:
             return head, _clean_start_spaces(tail)
 # def _get_first_value
@@ -70,11 +70,11 @@ def _lines_compare(l1, l2):
 
 
 def key(line):
-    key, tail = _get_first_value(line)
+    head, tail = _get_first_value(line)
     if tail:
-        return _try_as_float(key), _try_as_float(_get_first_value(tail))
+        return _try_as_float(head), _try_as_float(_get_first_value(tail)[0])
     else:
-        return _try_as_float(key), None
+        return _try_as_float(head), None
 
 
 class _Dumper:
@@ -137,6 +137,7 @@ class _DataHandler:
         self._flushed = False
 
     def add_line(self, line):
+        line += '\n'
         if self._flushed:
             raise ValueError("Can't add table data, table interaction already flushed")
         self._buf.append(line)
@@ -163,34 +164,50 @@ class _DataHandler:
                          (self._table_name, len(self._buf), self._buf_size))
         self._buf.sort(cmp=_lines_compare)
 
-        if len(self._chunks):
+        # write file
+        _end_chunk = False
+        _end_insert = True
+        sequence = 1
+        output_size = 0
+        insert_size = 0
+        memory_chunk = [(key(line), line) for line in self._buf]
+        temp_chunks = [[(key(line), line) for line in chunk]
+                       for chunk in self._chunks]
+        for _key, _line in heapq.merge(memory_chunk, *temp_chunks):
+            if _end_chunk:
+                dumper.new_output('{counter:04}_{table_name}_{sequence:05}.sql'.format(
+                    counter=self._counter, table_name=self._table_name, sequence=sequence))
+                output_size = 0
 
-            # multiple chunks
-            sequence = 1
-            dumper.append(self._start_line)
-            output_size = 0
-            sorted_memory = [(key(line), line) for line in self._buf]
-            sorted_chunks = [[(key(line), line) for line in chunk]
-                             for chunk in self._chunks]
-            for _key, _line in heapq.merge(sorted_memory, *sorted_chunks):
-                dumper.append(_line + '\n')
-                output_size += len(_line)
-                if output_size > self._max_chunk_size:
-                    dumper.flush()
+            if _end_chunk or _end_insert:
+                dumper.append(self._start_line)
+                output_size += len(self._start_line)
+                insert_size = len(self._start_line)
+            # reset output chunk
 
-                    dumper.new_output('{counter:04}_{table_name}_{sequence:05}.sql'.format(
-                        counter=self._counter, table_name=self._table_name, sequence=sequence))
-                    output_size = 0
-                    sequence += 1
+            _end_chunk = False
+            _end_insert = False
 
-                    dumper.append(self._start_line)
-                    # for _key _ine in sorted data
-        else:
-            dumper.append(self._start_line)
-            for _line in self._buf:
-                dumper.append(_line + '\n')
-            dumper.flush()
+            if output_size + len(_line) + 4 >= self._max_chunk_size:
+                _end_chunk = True
 
+            if insert_size + len(_line) + 4 >= 5000:
+                _end_insert = True
+
+            dumper.append('(' + _line[:-1] + ')' + (';' if _end_chunk or _end_insert else ',') + '\n')
+            output_size += len(_line) + 4
+            insert_size += len(_line) + 4
+
+            if _end_chunk or _end_insert:
+                dumper.flush()
+
+            if _end_chunk:
+                sequence += 1
+        # for _key _ine in sorted data
+
+        last_lines = dumper.pop_last_lines(1)
+        if len(last_lines) > 0:
+            dumper.append(last_lines[0][:-2] + ";\n")
         dumper.flush()
 
         for chunk in self._chunks:
