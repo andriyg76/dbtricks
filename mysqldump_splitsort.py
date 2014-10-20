@@ -223,8 +223,7 @@ class _DataHandler:
 
 
 TABLE_STRUCTURE_RE = re.compile(r'^-- Table structure for table `(?P<table>.*?)`')
-INSERT_INTO_RE = re.compile(r'^INSERT INTO .* VALUES$')
-VALUES_RE = re.compile(r'^\((?P<data>.*?)\)[;,]$')
+INSERT_INTO_RE = re.compile(r'^(?P<insert_into>INSERT INTO .* VALUES) \((?P<data>.*?)\);$')
 
 
 def __do_split(args, sql_dump_file, order):
@@ -240,6 +239,7 @@ def __do_split(args, sql_dump_file, order):
             if epilogue:
                 dumper.append(line)
             if TABLE_STRUCTURE_RE.match(line):
+                previous_table = table_name
                 table_name = TABLE_STRUCTURE_RE.match(line).groupdict()['table']
                 counter = importer.get_order_number(order, table_name, previous_table)
 
@@ -250,10 +250,12 @@ def __do_split(args, sql_dump_file, order):
                 dumper.add_lines(backup)
                 dumper.append(line)
             elif INSERT_INTO_RE.match(line):
+                re_dict = INSERT_INTO_RE.match(line).groupdict()
+                start_line = re_dict['insert_into'] + '\n'
+                data = re_dict['data']
                 if not data_handler:
-                    data_handler = _DataHandler(args.chunk_size, line, table_name, counter)
-            elif VALUES_RE.match(line):
-                data_handler.add_line(VALUES_RE.match(line).groupdict()['data'])
+                    data_handler = _DataHandler(args.chunk_size, start_line, table_name, counter)
+                data_handler.add_line(data)
             elif data_handler and line == '\n':
                 pass
             elif data_handler:
