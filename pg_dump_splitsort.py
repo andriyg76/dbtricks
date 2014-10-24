@@ -125,7 +125,6 @@ class _DataHandler:
         self._buf.sort(cmp=_lines_compare)
 
         if len(self._chunks):
-
             # multiple chunks
             sequence = 1
             dumper.append(self._start_line)
@@ -150,8 +149,6 @@ class _DataHandler:
         else:
             dumper.append(self._start_line)
             dumper.add_lines(self._buf)
-            dumper.append(_END_COPY_LINE)
-            dumper.flush()
 
         dumper.append(_END_COPY_LINE)
         dumper.flush()
@@ -195,7 +192,7 @@ def __do_split(args, sql_dump_file, order):
                 if epilogue or line in ('\n', '--\n'):
                     dumper.append(line)
                 elif re.match(CONSTRAINT_COMMENT_RE, line):
-                    backup = dumper.pop_last_lines()
+                    backup = dumper.pop_last_lines(2)
                     dumper.flush()
                     dumper.new_output('9999_epilogue.sql')
                     dumper.add_lines(backup)
@@ -208,7 +205,7 @@ def __do_split(args, sql_dump_file, order):
                             schema=matcher.groupdict()['schema'], table=matcher.groupdict()['table'])
                         counter = importer.get_order_number(order, table_name, previous_table)
 
-                        backup = dumper.pop_last_lines()
+                        backup = dumper.pop_last_lines(2)
                         dumper.flush()
                         dumper.new_output('{counter:04}_{table_name}.sql'.format(
                             counter=counter, table_name=table_name))
@@ -219,7 +216,7 @@ def __do_split(args, sql_dump_file, order):
                     else:
                         dumper.append(line)
 
-                        # for every line
+        # for every line
 
 
 # def __do_import
