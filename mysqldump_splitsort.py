@@ -175,8 +175,9 @@ class _DataHandler:
                        for chunk in self._chunks]
         for _key, _line in heapq.merge(memory_chunk, *temp_chunks):
             if _end_chunk:
-                dumper.new_output('{counter:04}_{table_name}_{sequence:05}.sql'.format(
-                    counter=self._counter, table_name=self._table_name, sequence=sequence))
+                dumper.new_output('{counter}_{table_name}_{sequence}.sql'.format(
+                    counter=self._counter, table_name=self._table_name,
+                    sequence=importer.str_in_base(sequence, min_with=4)))
                 output_size = 0
 
             if _end_chunk or _end_insert:
@@ -245,7 +246,7 @@ def __do_split(args, sql_dump_file, order):
 
                 backup = dumper.pop_last_lines(2)
                 dumper.flush()
-                dumper.new_output('{counter:04}_{table_name}.sql'.format(
+                dumper.new_output('{counter}_{table_name}.sql'.format(
                     counter=counter, table_name=table_name))
                 dumper.add_lines(backup)
                 dumper.append(line)
@@ -275,41 +276,5 @@ def __do_split(args, sql_dump_file, order):
 # def __do_split
 
 
-def split_sql_file(args):
-    importer.verbose("Opening sql dump file:", args.sql_dump_file)
-    with file(args.sql_dump_file) as sql_dump_file:
-        if args.destination_path:
-            importer.verbose("Changing dir to:", args.destination_path)
-            os.chdir(args.destination_path)
-        # if -d path
-
-        if args.c:
-            importer.verbose("Removing previous sql chunks...")
-            sql_file_part_re = re.compile("^\d+_.*[sS][qQ][lL]$")
-            for f in os.listdir("."):
-                if sql_file_part_re.match(f):
-                    importer.verbose("Removing file", f)
-                    os.remove(f)
-                    # for f
-        # if -c
-
-        if os.path.exists(".order"):
-            with open('.order', 'r') as infile:
-                order = json.load(infile)
-                importer.verbose("Read .order file", order)
-        else:
-            importer.verbose("Can't find .order file, starting from scratch")
-            order = {}
-            # if .order exist
-
-        __do_split(args, sql_dump_file, order)
-
-        importer.verbose("Writing updated .order file")
-        with open('.order', 'w') as outfile:
-            json.dump(order, fp=outfile, sort_keys=True, indent=4, separators=(',', ': '))
-            # with sql_dump_file
-
-# def split_sql_file
-
 if __name__ == '__main__':
-    split_sql_file(importer.create_argsparser())
+    importer.split_sql_file(importer.create_argsparser(), __do_split=__do_split)
