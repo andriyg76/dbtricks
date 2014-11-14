@@ -19,12 +19,17 @@ The script splits the dump into the following files:
     :
     :
     00YY_<schemax>_<tabley>_0001.sql - COPY/INSERT data for each table *sorted by the first field, and second fields*, splitted to chunks near specified maximum size.
-    9999_epilogue.sql - everything after the last COPY
+    zzzz_epilogue.sql - everything after the last COPY
+    
+For more compact files names numbering are done wit a 36 base numbering sysem 0-9a-z.
 
-for mysql files will be numbered without schema ``00001_<tabley>_00001.sql``
+For mysql dumps files should be numbered without schema ``00001_<tabley>_00001.sql``
+
+Mysql dumps should be prepared with a mysqldump options --skip-opt 
 
 The files for table data are numbered uniquely, and first, order number assign is stored in .pgtricks file.
-files can be used to re-create the database::
+
+Backed up files can be used to re-create the database:
 
     $ cat *.sql | psql <database>
 
