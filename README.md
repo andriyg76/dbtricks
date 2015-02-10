@@ -2,14 +2,49 @@ Based on ``pgtricks`` project [https://github.com/akaihola/pgtricks]
 
 ``pg_dump_splitsort.py`` ``mysqldump_splitsort.py`` are a handy scripts for pre-processing PostgreSQL's and MySQL's
 ``pg_dump`` and ``mysqldump`` output to make it more suitable for diffing and storing in version
-control.
+control systems.
 
-Usage::
+```
+usage: pg_dump_splitsort.py [-h] [-m CHUNK_SIZE_KB] [-d DESTINATION_PATH] [-v]
+                            [-c]
+                            sql_dump_file
 
-    python (pg_dump|mysdlump)_splitsort.py -v -m=max_datachunk_in_bytes -c <filename>.sql
-        -v - Verbose output
-        -m - Maximum size of dumped data in one chunk [by default - 5MB]
-        -c - Clean run. Removes \d\d\d\d_*.sql files from current directory before script run
+Split database dump file to a chunks.
+
+positional arguments:
+  sql_dump_file
+
+optional arguments:
+  -h, --help           show this help message and exit
+  -m CHUNK_SIZE_KB     Max chunk size of database part, in kb default
+                       2014(2Mb)
+  -d DESTINATION_PATH  Path, where to store splitted files
+  -v                   Verbose dumping output
+  -c                   Clean destination
+```
+
+```
+usage: mysqldump_splitsort.py [-h] [-m CHUNK_SIZE_KB] [-d DESTINATION_PATH]
+                              [-v] [-c]
+                              sql_dump_file
+
+Split database dump file to a chunks.
+
+positional arguments:
+  sql_dump_file
+
+optional arguments:
+  -h, --help           show this help message and exit
+  -m CHUNK_SIZE_KB     Max chunk size of database part, in kb default
+                       2014(2Mb)
+  -d DESTINATION_PATH  Path, where to store splitted files
+  -v                   Verbose dumping output
+  -c                   Clean destination
+```
+
+    -v - Verbose output
+    -m - Maximum size of dumped data in one chunk [by default - 5MB]
+    -c - Clean run. Removes \d\d\d\d_*.sql files from current directory before script run
 
 The script splits the dump into the following files:
 
@@ -23,11 +58,11 @@ The script splits the dump into the following files:
     
 For more compact files names numbering are done wit a 36 base numbering sysem 0-9a-z.
 
-For mysql dumps files should be numbered without schema ``00001_<tabley>_00001.sql``
+For mysql dumps files numbered without schema ``00001_<tabley>_00001.sql``
 
-Mysql dumps should be prepared with a mysqldump options --skip-opt 
+Mysql dumps have to be prepared with a mysqldump options --skip-opt 
 
-The files for table data are numbered uniquely, and first, order number assign is stored in .pgtricks file.
+The files for table data are numbered uniquely and table order number is stored persistantly in .pgtricks file.
 
 Backed up files can be used to re-create the database:
 
