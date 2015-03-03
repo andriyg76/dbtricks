@@ -70,3 +70,6 @@ Backed up files can be used to re-create the database:
 
 
     $ cat *.sql | mysql -d <database>
+
+
+[![Join the chat at https://gitter.im/agushuley/dbtricks](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/agushuley/dbtricks?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
