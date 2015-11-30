@@ -2,6 +2,7 @@
 *.pyc
 /README.html
 .idea/
-dbtricks
+dbtricks*
+src/github.com
 libs
 pkg
