@@ -2,7 +2,7 @@
 *.pyc
 /README.html
 .idea/
-dbtricks*
-src/github.com
+/src/github.com/**
 libs
 pkg
+bin

@@ -56,4 +56,16 @@ func TestWrite(t *testing.T) {
 	jsontext := _orders.writeOrders()
 
 	assert.Equal(t, jsontext, "{}")
+
+	_orders.GetTableOrder("table2")
+
+	jsontext = _orders.writeOrders()
+
+	assert.Equal(t, jsontext, "{\n\t\"table2\": 288\n}")
+
+	_orders.GetTableOrder("table1")
+
+	jsontext = _orders.writeOrders()
+
+	assert.Equal(t, jsontext, "{\n\t\"table1\": 144,\n\t\"table2\": 288\n}")
 }
