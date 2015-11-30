@@ -2,5 +2,6 @@
 *.pyc
 /README.html
 .idea/
-**/*.iml
-dbtricks*
+dbtricks
+libs
+pkg
