@@ -1,4 +1,4 @@
-package pgsplit
+package main
 
 import (
 	"os"
