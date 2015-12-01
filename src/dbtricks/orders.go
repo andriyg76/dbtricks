@@ -16,7 +16,8 @@ type Orders interface {
 	GetTableOrder(table string) int32
 	GetSchemeTableOrder(scheme string, table string) int32
 	getMap() map[string]int32
-	writeOrders() string
+	writeOrders() []byte
+	WriteOrders() error
 }
 
 const ORDERS_INCREMENT int32 = 36 * 8
@@ -83,17 +84,30 @@ func readOrders(jsontext []byte) Orders {
 	return _orders
 }
 
-func (i *orders) writeOrders() string {
+var empty_json = []byte("{}")
+
+func (i *orders) writeOrders() []byte {
 	jsonstring, err := json.Marshal(i.orders)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Can't serialize json: ", i.orders, " :", err.Error())
-		return "{}"
+		return empty_json
 	}
 	var out = bytes.Buffer{}
 	err = json.Indent(&out, jsonstring, "", "\t")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Can't reformat json: ", string(jsonstring), " :", err.Error())
-		return string(jsonstring)
+		return jsonstring
 	}
-	return string(out.Bytes())
+	return out.Bytes()
+}
+
+func (i *orders) WriteOrders() error {
+	jsonstring := i.writeOrders()
+
+	err := ioutil.WriteFile(ORDERS_FILE_NAME, jsonstring, 0)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Can't write ", ORDERS_FILE_NAME, " :", err.Error())
+		return err
+	}
+	return nil
 }
