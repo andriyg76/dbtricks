@@ -8,7 +8,7 @@ else
 	GOBIN=$GOPATH/bin
 fi
 
-export GOROOT GOBIN
+export GOPATH GOBIN
 set | grep GO
 
 rm -Rvf bin pkg
