@@ -1,14 +1,17 @@
 package pgdumpsplit
 
-import "flag"
+import (
+	"flag"
+	"encoding/json"
+)
 
-type params struct  {
-	destination string
-	chunk_size int
-	is_verbose bool
-	clean_dest bool
-	is_help bool
-	params *flag.FlagSet
+type params struct {
+	V_Destination      string `json:"Destination"`
+	V_ChunkSize        int    `json:"ChunkSize"`
+	V_IsVerbose        bool   `json:"IsVerbose"`
+	V_CleanDestination bool   `json:"CleanDestination"`
+	V_IsHelp           bool   `json:"IsHelp"`
+	params             *flag.FlagSet
 }
 
 type Params interface {
@@ -18,19 +21,20 @@ type Params interface {
 	CleanDestination() bool
 	IsHelp() bool
 	PrintUsage()
+	String() string
 }
 
 func ParseParams(args []string) (Params, error) {
 	_params := params{
-		chunk_size: 2048,
+		V_ChunkSize: 2048,
 	}
 
 	set := flag.NewFlagSet("Split database dump file to a chunks.", flag.ContinueOnError)
-	set.StringVar(&_params.destination, "d", "", "Path, where to store splitted files")
-	set.IntVar(&_params.chunk_size, "m", 2048, "Max chunk size of database part, in kb")
-	set.BoolVar(&_params.is_verbose, "v", false, "Verbose dumping output")
-	set.BoolVar(&_params.clean_dest, "c", false, "Clean destination")
-	set.BoolVar(&_params.is_help, "h", false, "Help")
+	set.StringVar(&_params.V_Destination, "d", "", "Path, where to store splitted files")
+	set.IntVar(&_params.V_ChunkSize, "m", 2048, "Max chunk size of database part, in kb")
+	set.BoolVar(&_params.V_IsVerbose, "v", false, "Verbose dumping output")
+	set.BoolVar(&_params.V_CleanDestination, "c", false, "Clean destination")
+	set.BoolVar(&_params.V_IsHelp, "h", false, "Help")
 
 	err := set.Parse(args)
 	if err != nil {
@@ -41,25 +45,30 @@ func ParseParams(args []string) (Params, error) {
 }
 
 func (i* params) Destination() string {
-	return i.destination
+	return i.V_Destination
 }
 
 func (i* params) ChunkSize() int {
-	return i.chunk_size
+	return i.V_ChunkSize
 }
 
 func (i* params) IsVerbose() bool {
-	return i.is_verbose
+	return i.V_IsVerbose
 }
 
 func (i* params) CleanDestination() bool {
-	return i.clean_dest
+	return i.V_CleanDestination
 }
 
 func (i* params) IsHelp() bool {
-	return i.is_help
+	return i.V_IsHelp
 }
 
 func (i* params) PrintUsage() {
 	i.params.Usage()
+}
+
+func (i* params) String() string {
+	val, _ := json.Marshal(i)
+	return string(val)
 }
