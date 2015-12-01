@@ -18,6 +18,7 @@ type Orders interface {
 	getMap() map[string]int32
 	writeOrders() []byte
 	WriteOrders() error
+	IsEmpty() bool
 }
 
 const ORDERS_INCREMENT int32 = 36 * 8
@@ -110,4 +111,8 @@ func (i *orders) WriteOrders() error {
 		return err
 	}
 	return nil
+}
+
+func (i *orders) IsEmpty() bool  {
+	return len(i.orders) == 0
 }

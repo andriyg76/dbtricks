@@ -15,5 +15,7 @@ rm -Rvf bin pkg
 
 go get -v github.com/stretchr/testify/assert && \
 	go test -v dbtricks && \
-	# go test -v pgsplit && \
-	go install -v pgsplit
+	go test -v pgdumpsplit && \
+	go install -v pgdumpsplit/pgdumpsplit && \
+	go test -v mydumpsplit && \
+	go install -v mydumpsplit/mydumpsplit

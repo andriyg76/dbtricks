@@ -2,14 +2,12 @@
 
 Based on ``pgtricks`` project [https://github.com/akaihola/pgtricks]
 
-``pg_dump_splitsort.py`` ``mysqldump_splitsort.py`` are a handy scripts for pre-processing PostgreSQL's and MySQL's
+``pgdumpsplit`` ``mydumpsplit`` are a handy scripts for pre-processing PostgreSQL's and MySQL's
 ``pg_dump`` and ``mysqldump`` output to make it more suitable for diffing and storing in version
 control systems.
 
 ```
-usage: pg_dump_splitsort.py [-h] [-m CHUNK_SIZE_KB] [-d DESTINATION_PATH] [-v]
-                            [-c]
-                            sql_dump_file
+usage: pgdumpsplit [-h] [-m CHUNK_SIZE_KB] [-d DESTINATION_PATH] [-v] [-c] < sql_dump_file
 
 Split database dump file to a chunks.
 
