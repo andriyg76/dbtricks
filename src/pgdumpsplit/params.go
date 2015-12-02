@@ -2,16 +2,20 @@ package pgdumpsplit
 
 import (
 	"flag"
-	"encoding/json"
+	"os"
+	"errors"
+	"strings"
 )
 
 type params struct {
-	V_Destination      string `json:"Destination"`
-	V_ChunkSize        int    `json:"ChunkSize"`
-	V_IsVerbose        bool   `json:"IsVerbose"`
-	V_CleanDestination bool   `json:"CleanDestination"`
-	V_IsHelp           bool   `json:"IsHelp"`
-	params             *flag.FlagSet
+	destination      string
+	chunkSize        int
+	isVerbose        bool
+	cleanDestination bool
+	isHelp           bool
+	tail             []string
+	error            error
+	set              *flag.FlagSet
 }
 
 type Params interface {
@@ -20,55 +24,70 @@ type Params interface {
 	IsVerbose() bool
 	CleanDestination() bool
 	IsHelp() bool
-	PrintUsage()
-	String() string
+	File() string
+	Error() error
+	PrintUsage(file *os.File)
 }
 
-func ParseParams(args []string) (Params, error) {
+func ParseParams(args []string) (r_val Params) {
 	_params := params{
-		V_ChunkSize: 2048,
+		chunkSize: 2048,
 	}
+	r_val = &_params
 
-	set := flag.NewFlagSet("Split database dump file to a chunks.", flag.ContinueOnError)
-	set.StringVar(&_params.V_Destination, "d", "", "Path, where to store splitted files")
-	set.IntVar(&_params.V_ChunkSize, "m", 2048, "Max chunk size of database part, in kb")
-	set.BoolVar(&_params.V_IsVerbose, "v", false, "Verbose dumping output")
-	set.BoolVar(&_params.V_CleanDestination, "c", false, "Clean destination")
-	set.BoolVar(&_params.V_IsHelp, "h", false, "Help")
+	_params.set = flag.NewFlagSet("pgdumpsplit", flag.ContinueOnError)
+	_params.set.StringVar(&_params.destination, "d", "", "Path, where to store splitted files")
+	_params.set.IntVar(&_params.chunkSize, "m", 2048, "Max chunk size of database part, in kb")
+	_params.set.BoolVar(&_params.isVerbose, "v", false, "Verbose dumping output")
+	_params.set.BoolVar(&_params.cleanDestination, "c", false, "Clean destination")
+	_params.set.BoolVar(&_params.isHelp, "h", false, "Help")
 
-	err := set.Parse(args)
-	if err != nil {
-		return nil, err
+	_params.error = _params.set.Parse(args[1:])
+	if _params.error != nil {
+		return
 	}
-	_params.params = set
-	return &_params, nil
+	_params.tail = _params.set.Args()
+	if len(_params.tail) > 1 {
+		_params.set.PrintDefaults()
+		_params.error = errors.New("Unnecessary params given: " + strings.Join(_params.tail, ", "))
+		return
+	}
+	return
 }
 
-func (i* params) Destination() string {
-	return i.V_Destination
+func (i *params) Destination() string {
+	return i.destination
 }
 
-func (i* params) ChunkSize() int {
-	return i.V_ChunkSize
+func (i *params) ChunkSize() int {
+	return i.chunkSize
 }
 
-func (i* params) IsVerbose() bool {
-	return i.V_IsVerbose
+func (i *params) IsVerbose() bool {
+	return i.isVerbose
 }
 
-func (i* params) CleanDestination() bool {
-	return i.V_CleanDestination
+func (i *params) CleanDestination() bool {
+	return i.cleanDestination
 }
 
-func (i* params) IsHelp() bool {
-	return i.V_IsHelp
+func (i *params) IsHelp() bool {
+	return i.isHelp
 }
 
-func (i* params) PrintUsage() {
-	i.params.Usage()
+func (i *params) PrintUsage(file *os.File) {
+	i.set.SetOutput(file)
+	i.set.PrintDefaults()
 }
 
-func (i* params) String() string {
-	val, _ := json.Marshal(i)
-	return string(val)
+func (i *params) Error() error {
+	return i.error
+}
+
+func (i *params) File() string {
+	if len(i.tail) == 1 {
+		return i.tail[0]
+	} else {
+		return ""
+	}
 }

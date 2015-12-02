@@ -8,10 +8,12 @@ import (
 )
 
 func TestParseParams(t *testing.T) {
-	params, err := ParseParams([]string{os.Args[0], "-h"})
+	params:= ParseParams([]string{os.Args[0], "-h", "file1"})
 
-	fmt.Fprintln(os.Stderr, params.String())
-	assert.Equal(t, err, nil)
+	fmt.Fprintln(os.Stderr, params)
+	assert.Equal(t, params.Error(), nil)
 
-	//assert.Equal(t, true, params.IsHelp())
+	assert.Equal(t, true, params.IsHelp())
+
+	assert.Equal(t, "file1", params.File())
 }

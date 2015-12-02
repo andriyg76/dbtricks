@@ -5,6 +5,7 @@ import (
 	"dbtricks"
 	"os"
 	"pgdumpsplit"
+	"log"
 )
 
 
@@ -16,27 +17,22 @@ type Dumper interface {
 
 }
 
-func NewDumper(output_file string) (d Dumper, e error) {
-	return
-}
-
 func main() {
-	params, err := pgdumpsplit.ParseParams(os.Args)
-	if err != nil {
-		fmt.Fprint(os.Stderr, "Error parsing params", err.Error())
-		params.PrintUsage()
+	params := pgdumpsplit.ParseParams(os.Args)
+	if params.Error() != nil {
+		fmt.Fprintln(os.Stderr, "Error parsing params ", params.Error())
 		os.Exit(2)
 	}
 
 	if params.IsHelp() {
-		params.PrintUsage()
+		params.PrintUsage(os.Stdout)
 		os.Exit(0)
 	}
 
 	orders := dbtricks.ReadOrders()
 
 	if !orders.IsEmpty() {
-		err = orders.WriteOrders()
+		err := orders.WriteOrders()
 		if err != nil {
 			panic("Error writing orders: " + err.Error())
 		}
