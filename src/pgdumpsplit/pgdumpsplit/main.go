@@ -5,7 +5,6 @@ import (
 	"dbtricks"
 	"os"
 	"pgdumpsplit"
-	"log"
 )
 
 
