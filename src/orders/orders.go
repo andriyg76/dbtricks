@@ -1,4 +1,4 @@
-package dbtricks
+package orders
 
 import (
 	"os"
@@ -10,6 +10,7 @@ import (
 )
 type orders struct {
 	orders map[string]int32
+	target_dir string
 }
 
 type Orders interface {
@@ -21,7 +22,7 @@ type Orders interface {
 	IsEmpty() bool
 }
 
-const ORDERS_INCREMENT int32 = 36 * 8
+const tables_increment int32 = 36 * 8
 
 func (i *orders) GetTableOrder(table string) int32 {
 	order, got := i.orders[table]
@@ -43,7 +44,7 @@ func (i *orders) GetTableOrder(table string) int32 {
 		}
 		last = i.orders[k]
 	}
-	i.orders[table] = last + ORDERS_INCREMENT
+	i.orders[table] = last + tables_increment
 	return i.orders[table]
 }
 
@@ -55,26 +56,31 @@ func (i *orders) getMap() map[string]int32 {
 	return i.orders
 }
 
-func emptyOrders() *orders {
+func emptyOrders(target_dir string) *orders {
 	return &orders{
 		orders: map[string]int32{},
+		target_dir: target_dir,
 	}
 }
 
-const ORDERS_FILE_NAME = ".orders"
+const orders_file_name = ".orders"
 
-func ReadOrders() Orders {
-	jsontext, err := ioutil.ReadFile(ORDERS_FILE_NAME)
+func ReadOrders(target_dir string) Orders {
+	jsontext, err := ioutil.ReadFile(orders_file_name)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Can't read ", ORDERS_FILE_NAME, " file, will use empty orders")
-		return emptyOrders()
+		if os.IsNotExist(err) {
+			fmt.Fprintln(os.Stderr, "Can't read ", orders_file_name, " file, will use empty orders")
+			return emptyOrders(target_dir)
+		} else {
+			panic("Can't read " + orders_file_name + " " + err.Error())
+		}
 	}
 
-	return readOrders(jsontext)
+	return readOrders(jsontext, target_dir)
 }
 
-func readOrders(jsontext []byte) Orders {
-	_orders := emptyOrders()
+func readOrders(jsontext []byte, target_dir string) Orders {
+	_orders := emptyOrders(target_dir)
 
 	err := json.Unmarshal(jsontext, &_orders.orders)
 	if err != nil {
@@ -105,9 +111,9 @@ func (i *orders) writeOrders() []byte {
 func (i *orders) WriteOrders() error {
 	jsonstring := i.writeOrders()
 
-	err := ioutil.WriteFile(ORDERS_FILE_NAME, jsonstring, 0)
+	err := ioutil.WriteFile(orders_file_name, jsonstring, os.ModePerm)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Can't write ", ORDERS_FILE_NAME, " :", err.Error())
+		fmt.Fprintln(os.Stderr, "Can't write ", orders_file_name, " :", err.Error())
 		return err
 	}
 	return nil

@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"dbtricks"
 	"os"
 	"pgdumpsplit"
+	"log"
+	"orders"
+	"bufio"
 )
 
 
@@ -28,7 +30,20 @@ func main() {
 		os.Exit(0)
 	}
 
-	orders := dbtricks.ReadOrders()
+	var file *os.File
+	if params.File() == "" || params.File() == "-" {
+		file = os.Stdin
+	} else {
+		file, err := os.OpenFile(params.File(), os.O_RDONLY, os.ModePerm)
+		if err != nil {
+			log.Fatal("Can't open file ", params.File(), " for read")
+		}
+		defer file.Close()
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Text()
+
+	orders := orders.ReadOrders(params.Destination())
 
 	if !orders.IsEmpty() {
 		err := orders.WriteOrders()

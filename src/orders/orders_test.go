@@ -1,4 +1,4 @@
-package dbtricks
+package orders
 
 import (
 	"testing"
@@ -6,25 +6,25 @@ import (
 )
 
 func TestOrdersRead(t *testing.T)  {
-	_orders := readOrders([]byte("/dev/null"))
+	_orders := readOrders([]byte("/dev/null"), "")
 
 	assert.Empty(t, _orders.getMap())
 
-	_orders = readOrders([]byte(`{"one": 1}`))
+	_orders = readOrders([]byte(`{"one": 1}`), "")
 
 	assert.NotEmpty(t, _orders.getMap())
 	assert.Equal(t, len(_orders.getMap()), 1)
 }
 
 func TestOrdersFirst(t *testing.T) {
-	_orders := emptyOrders()
+	_orders := emptyOrders("")
 
 	order := _orders.GetTableOrder("first")
-	assert.Equal(t, order, ORDERS_INCREMENT)
+	assert.Equal(t, order, tables_increment)
 }
 
 func TestBeforeFirst(t *testing.T) {
-	_orders := emptyOrders()
+	_orders := emptyOrders("")
 	_orders.orders["last"] = 100
 
 	order := _orders.GetTableOrder("first")
@@ -32,15 +32,15 @@ func TestBeforeFirst(t *testing.T) {
 }
 
 func TestAppendLast(t *testing.T) {
-	_orders := emptyOrders()
+	_orders := emptyOrders("")
 	_orders.orders["first"] = 50
 
 	order := _orders.GetTableOrder("last")
-	assert.Equal(t, order, 50 + ORDERS_INCREMENT)
+	assert.Equal(t, order, 50 + tables_increment)
 }
 
 func TestInsertBetween(t *testing.T) {
-	_orders := emptyOrders()
+	_orders := emptyOrders("")
 	_orders.orders = map[string]int32 {
 		"item3": 100,
 		"item1": 50,
@@ -51,7 +51,7 @@ func TestInsertBetween(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	_orders := emptyOrders()
+	_orders := emptyOrders("")
 
 	jsontext := _orders.writeOrders()
 
