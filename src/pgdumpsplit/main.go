@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"pgdumpsplit"
+	"pgdumpsplit/params"
 	"log"
 	"orders"
 	"bufio"
@@ -19,7 +19,7 @@ type Dumper interface {
 }
 
 func main() {
-	params := pgdumpsplit.ParseParams(os.Args)
+	params := params.ParseParams(os.Args)
 	if params.Error() != nil {
 		fmt.Fprintln(os.Stderr, "Error parsing params ", params.Error())
 		os.Exit(2)
@@ -41,7 +41,12 @@ func main() {
 		defer file.Close()
 	}
 	scanner := bufio.NewScanner(file)
-	scanner.Text()
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+	if scanner.Err() != nil {
+		log.Fatal("Error reading input file: ", scanner.Err())
+	}
 
 	orders := orders.ReadOrders(params.Destination())
 
