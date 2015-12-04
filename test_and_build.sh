@@ -15,7 +15,7 @@ rm -Rvf bin pkg
 
 go get -v github.com/stretchr/testify/assert \
     && go test -v orders \
-    && go test -v pgdumpsplit/args \
+    && go test -v pgdumpsplit/params \
     && go install -v pgdumpsplit #\
 #    && go test -v mydumpsplit \
 #    && go install -v mydumpsplit/mydumpsplit
