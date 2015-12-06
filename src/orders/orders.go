@@ -9,22 +9,22 @@ import (
 	"bytes"
 )
 type orders struct {
-	orders map[string]int32
+	orders map[string]int
 	target_dir string
 }
 
 type Orders interface {
-	GetTableOrder(table string) int32
-	GetSchemeTableOrder(scheme string, table string) int32
-	getMap() map[string]int32
+	GetTableOrder(table string) int
+	GetSchemeTableOrder(scheme string, table string) int
+	getMap() map[string]int
 	writeOrders() []byte
 	WriteOrders() error
 	IsEmpty() bool
 }
 
-const tables_increment int32 = 36 * 8
+const tables_increment int = 36 * 8
 
-func (i *orders) GetTableOrder(table string) int32 {
+func (i *orders) GetTableOrder(table string) int {
 	order, got := i.orders[table]
 	if got {
 		return order
@@ -36,7 +36,7 @@ func (i *orders) GetTableOrder(table string) int32 {
 	}
 	sort.Strings(keys)
 
-	last := int32(0)
+	last := int(0)
 	for _, k := range keys {
 		if k > table {
 			i.orders[table] = (last + i.orders[k]) / 2
@@ -48,17 +48,17 @@ func (i *orders) GetTableOrder(table string) int32 {
 	return i.orders[table]
 }
 
-func (i *orders) GetSchemeTableOrder(scheme string, table string) int32 {
+func (i *orders) GetSchemeTableOrder(scheme string, table string) int {
 	return i.GetTableOrder(scheme + "." + table)
 }
 
-func (i *orders) getMap() map[string]int32 {
+func (i *orders) getMap() map[string]int {
 	return i.orders
 }
 
 func emptyOrders(target_dir string) *orders {
 	return &orders{
-		orders: map[string]int32{},
+		orders: map[string]int{},
 		target_dir: target_dir,
 	}
 }
@@ -85,7 +85,7 @@ func readOrders(jsontext []byte, target_dir string) Orders {
 	err := json.Unmarshal(jsontext, &_orders.orders)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Can't parse orders json ", string(jsontext), " :", err.Error())
-		_orders.orders = map[string]int32{}
+		_orders.orders = map[string]int{}
 	}
 
 	return _orders

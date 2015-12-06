@@ -28,7 +28,7 @@ func TestBeforeFirst(t *testing.T) {
 	_orders.orders["last"] = 100
 
 	order := _orders.GetTableOrder("first")
-	assert.Equal(t, order, int32(50))
+	assert.Equal(t, order, int(50))
 }
 
 func TestAppendLast(t *testing.T) {
@@ -41,13 +41,13 @@ func TestAppendLast(t *testing.T) {
 
 func TestInsertBetween(t *testing.T) {
 	_orders := emptyOrders("")
-	_orders.orders = map[string]int32 {
+	_orders.orders = map[string]int {
 		"item3": 100,
 		"item1": 50,
 	}
 
 	order := _orders.GetTableOrder("item2")
-	assert.Equal(t, order, int32(75))
+	assert.Equal(t, order, int(75))
 }
 
 func TestWrite(t *testing.T) {

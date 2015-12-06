@@ -3,16 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
-	"pgdumpsplit/params"
+	"params"
 	"log"
 	"orders"
 	"bufio"
+	"pgdumpsplit/dumpsplit"
+	"strings"
+	"io"
 )
-
-
-type DataHandler interface {
-
-}
 
 type Dumper interface {
 
@@ -34,21 +32,44 @@ func main() {
 	if params.File() == "" || params.File() == "-" {
 		file = os.Stdin
 	} else {
-		file, err := os.OpenFile(params.File(), os.O_RDONLY, os.ModePerm)
+		var err error
+		file, err = os.OpenFile(params.File(), os.O_RDONLY, os.ModePerm)
 		if err != nil {
 			log.Fatal("Can't open file ", params.File(), " for read")
 		}
 		defer file.Close()
 	}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	}
-	if scanner.Err() != nil {
-		log.Fatal("Error reading input file: ", scanner.Err())
-	}
+	reader := bufio.NewReader(file)
 
+	if params.Destination() != "" {
+		if err := os.Chdir(params.Destination()); err != nil {
+			log.Fatal("Main: Can't change dir")
+		}
+	}
 	orders := orders.ReadOrders(params.Destination())
+
+	splitter, _ := dumpsplit.NewSplitter(orders, params.ChunkSize())
+	defer splitter.Close()
+
+	for {
+		line, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			splitter.Close()
+			log.Fatal("Main: Can't read iput file: " + err.Error())
+		}
+		line = strings.TrimRight(line, "\n\r")
+		err = splitter.HandleLine(line)
+		if err != nil {
+			splitter.Close()
+			log.Fatal("Main: Can't handle line: [" + line + "]: " + err.Error())
+		}
+	}
+	if err := splitter.Error(); err != nil {
+		splitter.Close()
+		log.Fatal("Error reading input file: ", err)
+	}
 
 	if !orders.IsEmpty() {
 		err := orders.WriteOrders()
