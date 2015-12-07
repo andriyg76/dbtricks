@@ -7,7 +7,7 @@ import (
 	"log"
 	"orders"
 	"bufio"
-	"pgdumpsplit/dumpsplit"
+	"pg/dumpsplit"
 	"strings"
 	"io"
 )
