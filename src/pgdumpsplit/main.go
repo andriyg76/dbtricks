@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"params"
+	"dbtricks/params"
 	"log"
 	"orders"
 	"bufio"
@@ -43,7 +43,7 @@ func main() {
 
 	if params.Destination() != "" {
 		if err := os.Chdir(params.Destination()); err != nil {
-			log.Fatal("Main: Can't change dir")
+			log.Fatal("Main: Can't change dir to: ", params.Destination())
 		}
 	}
 	orders := orders.ReadOrders(params.Destination())

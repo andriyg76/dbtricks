@@ -14,8 +14,8 @@ set | grep GO
 rm -Rvf bin pkg
 
 go get -v github.com/stretchr/testify/assert \
-    && go test -v orders \
-    && go test -v params \
+    && go test -v dbtricks \
+    && go test -v dbtricks/params \
     && go test -v pg/dumpsplit \
     && go test -v pg/datasplit \
-    && go install -v pg/pgdumpsplit #\
+    && go install -v pgdumpsplit #\

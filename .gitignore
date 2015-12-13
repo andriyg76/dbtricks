@@ -7,3 +7,5 @@ libs
 pkg
 bin
 /tests/
+.DS_Store
+

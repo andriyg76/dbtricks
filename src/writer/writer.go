@@ -13,6 +13,7 @@ type Writer interface {
 	ResetOutput(output_file string) error
 	Flush() error
 	Close()
+	DataSize() int64
 }
 
 func NewWriter(output_file string) (Writer, error) {
@@ -45,7 +46,9 @@ func (i *dumper) PopLastLines(count int) []string {
 			count = len(i.lines)
 		}
 		from := len(i.lines) - count
-		return i.lines[from:]
+		ret := i.lines[from:]
+		i.lines = i.lines[:from]
+		return ret
 	}
 	return nil
 }
@@ -112,4 +115,18 @@ func (i* dumper) ResetOutput(output_file string) error {
 		return err
 	}
 	return nil
+}
+
+func (i* dumper) DataSize() int64 {
+	if i.err != nil {
+		return -1
+	}
+	if i.lines == nil {
+		return 0
+	}
+	var result int64
+	for _, line := range i.lines {
+		result += int64(len(line) + 1)
+	}
+	return result
 }

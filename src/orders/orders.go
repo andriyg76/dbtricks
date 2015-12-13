@@ -7,25 +7,74 @@ import (
 	"encoding/json"
 	"sort"
 	"bytes"
+	"strings"
+	"dbtricks"
 )
-type orders struct {
-	orders map[string]int
-	target_dir string
+
+type Table interface {
+	TableName() string
+	TableOrder() int
+	FileName(part int) string
 }
 
 type Orders interface {
 	GetTableOrder(table string) int
+	GetTable(table string) Table
 	GetSchemeTableOrder(scheme string, table string) int
-	getMap() map[string]int
-	writeOrders() []byte
 	WriteOrders() error
 	IsEmpty() bool
+	getMap() map[string]table
+}
+
+type table struct {
+	tableName  string
+	tableOrder int
+}
+
+func (i table) TableName() string {
+	return i.tableName
+}
+
+func (i table) TableOrder() int {
+	return i.tableOrder
+}
+
+func (i table) FileName(part int) string {
+	if part == 0 {
+		return fmt.Sprintf("%v_%v",
+			dbtricks.IntInBase(i.tableOrder, 36, 4),
+			strings.Replace(i.tableName, ".", "_", 0))
+	} else {
+		return fmt.Sprintf("%v_%v_%v",
+			dbtricks.IntInBase(i.tableOrder, 36, 4),
+			strings.Replace(i.tableName, ".", "_", 0),
+			dbtricks.IntInBase(part, 36, 6),
+		)
+	}
+}
+
+type orders struct {
+	orders    map[string]table
+	targetDir string
 }
 
 const tables_increment int = 36 * 8
 
-func (i *orders) GetTableOrder(table string) int {
-	order, got := i.orders[table]
+func (i orders) addTable(tableName string, tableOrder int) orders {
+	var _orders orders = i
+	_orders.orders[tableName] = table{
+		tableName: tableName,
+		tableOrder: tableOrder,
+	}
+	return _orders
+}
+
+func (i *orders) GetTableOrder(tableName string) int {
+	return i.GetTable(tableName).TableOrder()
+}
+
+func (i *orders) GetTable(tableName string) Table  {
+	order, got := i.orders[tableName]
 	if got {
 		return order
 	}
@@ -38,28 +87,36 @@ func (i *orders) GetTableOrder(table string) int {
 
 	last := int(0)
 	for _, k := range keys {
-		if k > table {
-			i.orders[table] = (last + i.orders[k]) / 2
-			return i.orders[table]
+		if k > tableName {
+			new_table := table{
+				tableName: tableName,
+				tableOrder: (last + i.orders[k].tableOrder) / 2,
+			}
+			i.orders[tableName] = new_table
+			return new_table
 		}
-		last = i.orders[k]
+		last = i.orders[k].tableOrder
 	}
-	i.orders[table] = last + tables_increment
-	return i.orders[table]
+	new_table := table{
+		tableName: tableName,
+		tableOrder: last + tables_increment,
+	}
+	i.orders[tableName] = new_table
+	return new_table
 }
 
 func (i *orders) GetSchemeTableOrder(scheme string, table string) int {
 	return i.GetTableOrder(scheme + "." + table)
 }
 
-func (i *orders) getMap() map[string]int {
+func (i *orders) getMap() map[string]table {
 	return i.orders
 }
 
 func emptyOrders(target_dir string) *orders {
 	return &orders{
-		orders: map[string]int{},
-		target_dir: target_dir,
+		orders: map[string]table{},
+		targetDir: target_dir,
 	}
 }
 
@@ -82,10 +139,17 @@ func ReadOrders(target_dir string) Orders {
 func readOrders(jsontext []byte, target_dir string) Orders {
 	_orders := emptyOrders(target_dir)
 
-	err := json.Unmarshal(jsontext, &_orders.orders)
+	orders := map[string]int{}
+	err := json.Unmarshal(jsontext, &orders)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Can't parse orders json ", string(jsontext), " :", err.Error())
-		_orders.orders = map[string]int{}
+	}
+
+	for k, v := range orders {
+		_orders.orders[k] = table{
+			tableName: k,
+			tableOrder: v,
+		}
 	}
 
 	return _orders
@@ -94,7 +158,12 @@ func readOrders(jsontext []byte, target_dir string) Orders {
 var empty_json = []byte("{}")
 
 func (i *orders) writeOrders() []byte {
-	jsonstring, err := json.Marshal(i.orders)
+	orders := map[string]int{}
+	for _, v := range i.orders {
+		orders[v.tableName] = v.tableOrder
+	}
+
+	jsonstring, err := json.Marshal(orders)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Can't serialize json: ", i.orders, " :", err.Error())
 		return empty_json
@@ -119,6 +188,6 @@ func (i *orders) WriteOrders() error {
 	return nil
 }
 
-func (i *orders) IsEmpty() bool  {
+func (i *orders) IsEmpty() bool {
 	return len(i.orders) == 0
 }
