@@ -1,4 +1,5 @@
 package datasplit
+
 import (
 	"strconv"
 	"strings"
@@ -11,8 +12,7 @@ func (b buffer) Len() int {
 	return len(b)
 }
 
-func compareValues(one, two string) int  {
-
+func compareValues(one, two string) int {
 	if _1, _e1 := strconv.ParseFloat(one, 64); _e1 == nil {
 		if _2, _e2 := strconv.ParseFloat(two, 64); _e2 == nil {
 			if d := _1 - _2; d < 0 {
@@ -49,8 +49,8 @@ func compareByFirstOrNextValue(one, two string) int {
 	} else { // lenB > 0
 		return 1
 	}
-
 }
+
 func (b buffer) Less(i, j int) bool {
 	return compareByFirstOrNextValue(b[i], b[j]) < 0
 }

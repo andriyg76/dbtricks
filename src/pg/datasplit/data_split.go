@@ -1,4 +1,5 @@
 package datasplit
+
 import (
 	"writer"
 	"io/ioutil"
@@ -95,6 +96,7 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 
 	return nil
 }
+
 
 func flushBufferToTemp(tempFiles *[]string, buffer *buffer, currentBuffer *int) error {
 	tempfile, err := ioutil.TempFile(os.TempDir(), "data.XXXX")
