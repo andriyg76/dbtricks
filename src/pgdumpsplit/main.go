@@ -5,16 +5,12 @@ import (
 	"os"
 	"dbtricks/params"
 	"log"
-	"orders"
+	"dbtricks/orders"
 	"bufio"
 	"pg/dumpsplit"
 	"strings"
 	"io"
 )
-
-type Dumper interface {
-
-}
 
 func main() {
 	params := params.ParseParams(os.Args)

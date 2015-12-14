@@ -1,6 +1,6 @@
 package mergesort
+
 import (
-	"os"
 	"errors"
 	"bufio"
 	"strings"
@@ -8,7 +8,13 @@ import (
 )
 
 type Reader interface {
-	ReadLine() (string, error)
+	ReadLine() (error, string)
+}
+
+// Composition of reader and close, os.File have to match
+type DisposableIoReader interface {
+	io.Reader
+	io.Closer
 }
 
 type DisposableReader interface {
@@ -16,41 +22,62 @@ type DisposableReader interface {
 	Close()
 }
 
-type fileReader struct {
-	file    *os.File
-	channel chan struct {string; error}
+type stringAndErr struct {
+	string string
+	error  error
 }
 
-func NewAsyncFileReader(file *os.File) (error, DisposableReader) {
+type fileReader struct {
+	file    DisposableIoReader
+	channel chan stringAndErr
+}
+
+func NewAsyncFileReader(file DisposableIoReader) (error, DisposableReader) {
 	if file == nil {
-		return errors.New("null pointer exception: " + file)
+		return errors.New("null pointer exception: file"), nil
 	}
 
 	fileRrd := bufio.NewReader(file)
 
 	reader := &fileReader{
 		file: file,
-		channel: make(chan struct {string; error}),
+		channel: make(chan stringAndErr),
 	}
 
 	go func() {
-		line, err := fileRrd.ReadString('\n')
-		if err == io.EOF {
-			reader.Close()
-		}
-		if err != nil {
-			reader.channel < struct{nil; err}
-		} else {
-			line := strings.TrimRight(line, "\n\r")
-			reader.channel < struct{line; err}
+		for {
+			line, err := fileRrd.ReadString('\n')
+			if err == io.EOF {
+				reader.Close()
+				break
+			}
+			if err != nil {
+				line = ""
+			} else {
+				line = strings.TrimRight(line, "\n\r")
+			}
+			reader.channel <- stringAndErr{
+				string: line,
+				error: err,
+			}
 		}
 	}();
 
-	return reader
+	return nil, reader
 }
 
 func (i *fileReader) Close() {
 	if i.file != nil {
 		i.file.Close()
 	}
+
+	close(i.channel)
+}
+
+func (i *fileReader) ReadLine() (error, string) {
+	lae, ok := <-i.channel
+	if !ok {
+		return io.EOF, ""
+	}
+	return lae.error, lae.string
 }

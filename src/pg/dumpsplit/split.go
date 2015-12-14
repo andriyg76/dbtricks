@@ -1,9 +1,9 @@
 package dumpsplit
 import (
 	"regexp"
-	"orders"
+	"dbtricks/orders"
 	"pg/datasplit"
-	"writer"
+	"dbtricks/writer"
 	"dbtricks"
 )
 

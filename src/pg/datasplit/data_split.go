@@ -1,14 +1,14 @@
 package datasplit
 
 import (
-	"writer"
+	"dbtricks/writer"
 	"io/ioutil"
 	"os"
 	"fmt"
 	"log"
 	"bufio"
 	"io"
-	"orders"
+	"dbtricks/orders"
 	"sort"
 )
 
