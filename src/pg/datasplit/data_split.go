@@ -6,10 +6,10 @@ import (
 	"os"
 	"fmt"
 	"log"
-	"bufio"
 	"io"
 	"dbtricks/orders"
 	"sort"
+	"mergesort"
 )
 
 type DataSplitter interface {
@@ -52,46 +52,39 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 	part := 1
 
 	writer.AddLines(i.copyLine)
+	readers := []mergesort.Reader{mergesort.NewArrayReader(i.buffer)}
 	for _, row := range i.tempFiles {
 		file, err := os.Open(row)
 		if err != nil {
 			return err
 		}
-		defer file.Close()
-
-		reader := bufio.NewReader(file)
-		for {
-			if writer.DataSize() > i.chunkSize * 1024 {
-				writer.AddLines("\\.")
-				writer.ResetOutput(i.table.FileName(part) + ".sql")
-				writer.AddLines(i.copyLine)
-				part++
-			}
-
-			line, err := reader.ReadString('\n')
-			if err == io.EOF {
-				break
-			} else if err != nil {
-				return err
-			}
-
-			writer.AddLines(line)
+		err, reader := mergesort.NewAsyncFileReader(file)
+		if err != nil {
+			return err
 		}
+		readers = append(readers, reader)
+		defer reader.Close()
 	}
-	i.tempFiles = nil
-	if i.buffer != nil {
-		for _, line := range i.buffer {
-			if writer.DataSize() > i.chunkSize * 1024 {
-				writer.AddLines("\\.")
-				writer.ResetOutput(i.table.FileName(part) + ".sql")
-				writer.AddLines(i.copyLine)
-				part++
-			}
 
-			writer.AddLines(line)
+	sorted := mergesort.MergeSort(lessByFirstOrNextValue, readers...)
+	for {
+		err, row := sorted.ReadLine()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
 		}
-		i.buffer = nil
+
+		if writer.DataSize() > i.chunkSize * 1024 {
+			writer.AddLines("\\.")
+			writer.ResetOutput(i.table.FileName(part) + ".sql")
+			writer.AddLines(i.copyLine)
+			part++
+		}
+
+		writer.AddLines(row)
 	}
+
 	writer.AddLines("\\.")
 
 	return nil

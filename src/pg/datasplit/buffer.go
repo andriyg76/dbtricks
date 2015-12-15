@@ -51,6 +51,10 @@ func compareByFirstOrNextValue(one, two string) int {
 	}
 }
 
+func lessByFirstOrNextValue(one, two string) bool {
+	return compareByFirstOrNextValue(one, two) < 0
+}
+
 func (b buffer) Less(i, j int) bool {
 	return compareByFirstOrNextValue(b[i], b[j]) < 0
 }

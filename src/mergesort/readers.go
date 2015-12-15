@@ -18,6 +18,28 @@ type DisposableIoReader interface {
 	io.Closer
 }
 
+type arrayPos struct {
+	array []string
+	pos   int
+}
+
+func (i *arrayPos) ReadLine() (error, string)  {
+	if i.pos >= len(i.array) {
+		return io.EOF, ""
+	}
+
+	val:= i.array[i.pos]
+	i.pos ++
+	return nil, val
+}
+
+func NewArrayReader(array []string) Reader {
+	return &arrayPos{
+		array: array,
+		pos: 0,
+	}
+}
+
 type DisposableReader interface {
 	Reader
 	Close()
@@ -31,6 +53,7 @@ type stringAndErr struct {
 type fileReader struct {
 	file    DisposableIoReader
 	channel chan stringAndErr
+	gotEOF  bool
 }
 
 func NewAsyncFileReader(file DisposableIoReader) (error, DisposableReader) {
@@ -50,6 +73,10 @@ func NewAsyncFileReader(file DisposableIoReader) (error, DisposableReader) {
 			line, err := fileRrd.ReadString('\n')
 			log.Printf("Read line: %q error: %v", line, err)
 			line = strings.TrimRight(line, "\n\r")
+			if err == io.EOF && !reader.gotEOF && line != "" {
+				reader.gotEOF = true
+				err = nil
+			}
 			reader.channel <- stringAndErr{
 				string: line,
 				error: err,

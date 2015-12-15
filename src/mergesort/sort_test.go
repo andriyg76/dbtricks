@@ -37,7 +37,7 @@ func TestAsyncFileReader(t *testing.T) {
 	assert.NotNil(t, err)
 
 	err, reader := NewAsyncFileReader(&arrayReader{
-		slice: []byte("string\r\nst\rring2\r"),
+		slice: []byte("string\r\nst\rring2\r\n"),
 	})
 
 	assert.Nil(t, err)
@@ -50,7 +50,7 @@ func TestAsyncFileReader(t *testing.T) {
 
 	err, r = reader.ReadLine()
 	t.Log("2-th read: ", r, " err: ", err)
-	assert.Equal(t, err, io.EOF)
+	assert.Nil(t, err)
 	assert.Equal(t, "st\rring2", r)
 
 	err, r = reader.ReadLine()
@@ -59,9 +59,78 @@ func TestAsyncFileReader(t *testing.T) {
 	assert.Equal(t, "", r)
 }
 
+func TestCombineReaders(t *testing.T) {
+	err, reader := NewAsyncFileReader(&arrayReader{
+		slice: []byte("\n67\n8\n99\n"),
+	})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, reader)
+
+	err2, reader2 := NewAsyncFileReader(&arrayReader{
+		slice: []byte("7\n9\n"),
+	})
+
+	assert.Nil(t, err2)
+	assert.NotNil(t, reader2)
+
+	r := MergeTwoReaders(reader, reader2, AbcStrLess)
+
+	var res []string
+
+	for {
+		log.Print("MergeReaders state", r)
+		e, s := r.ReadLine()
+		if e != nil && e != io.EOF {
+			assert.Fail(t, "error ", e)
+			break
+		}
+		if e == io.EOF {
+			break
+		}
+		res = append(res, s)
+	}
+
+	assert.Equal(t, []string{"", "67", "7", "8", "9", "99"}, res)
+}
+
+func TestCombineReaderWithEmpty(t *testing.T) {
+	err, reader := NewAsyncFileReader(&arrayReader{
+		slice: []byte("\n8\n67\n99\n"),
+	})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, reader)
+
+	err2, reader2 := NewAsyncFileReader(&arrayReader{
+		slice: []byte(""),
+	})
+
+	assert.Nil(t, err2)
+	assert.NotNil(t, reader2)
+
+	r := MergeTwoReaders(reader, reader2, AbcStrLess)
+
+	var res []string
+
+	for {
+		e, s := r.ReadLine()
+		if e != nil && e != io.EOF {
+			assert.Fail(t, "error ", e)
+			break
+		}
+		if e == io.EOF {
+			break
+		}
+		res = append(res, s)
+	}
+
+	assert.Equal(t, []string{"", "8", "67", "99"}, res)
+}
+
 func TestMergeSort(t *testing.T) {
 	err, reader := NewAsyncFileReader(&arrayReader{
-		slice: []byte("8\n67\n99"),
+		slice: []byte("67\n8\n99"),
 	})
 
 	assert.Nil(t, err)
@@ -81,7 +150,7 @@ func TestMergeSort(t *testing.T) {
 	assert.Nil(t, err3)
 	assert.NotNil(t, reader3)
 
-	r := MergeSort(reader, reader2, reader3)
+	r := MergeSort(AbcStrLess, reader, reader2, reader3)
 
 	var res []string
 
@@ -98,5 +167,5 @@ func TestMergeSort(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, []string{"7", "8", "9", "67", "77", "88", "99"}, res)
+	assert.Equal(t, []string{"67", "7", "77", "8", "88", "9", "99", ""}, res)
 }
