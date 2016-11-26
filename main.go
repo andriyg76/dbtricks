@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"dbtricks/params"
+	"./dbtricks/params"
 	"log"
-	"dbtricks/orders"
+	"./dbtricks/orders"
 	"bufio"
-	"pg/dumpsplit"
+	"./pg/dumpsplit"
 	"strings"
 	"io"
 )
