@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"./dbtricks/params"
-	"log"
-	"./dbtricks/orders"
 	"bufio"
-	"./pg/dumpsplit"
-	"strings"
+	"fmt"
+	"github.com/andriyg76/godbtricks/dbtricks/orders"
+	"github.com/andriyg76/godbtricks/dbtricks/params"
+	"github.com/andriyg76/godbtricks/pg/dumpsplit"
 	"io"
+	"log"
+	"os"
+	"strings"
 )
 
 func main() {

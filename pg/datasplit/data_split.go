@@ -1,15 +1,15 @@
 package datasplit
 
 import (
-	"dbtricks/writer"
-	"io/ioutil"
-	"os"
 	"fmt"
-	"log"
+	"github.com/andriyg76/godbtricks/dbtricks/orders"
+	"github.com/andriyg76/godbtricks/dbtricks/writer"
+	"github.com/andriyg76/godbtricks/mergesort"
 	"io"
-	"dbtricks/orders"
+	"io/ioutil"
+	"log"
+	"os"
 	"sort"
-	"mergesort"
 )
 
 type DataSplitter interface {
@@ -17,12 +17,12 @@ type DataSplitter interface {
 	AddLine(line string) error
 }
 
-func NewDataSplitter(chunk_size int, copy_line string, table orders.Table, ) DataSplitter {
+func NewDataSplitter(chunk_size int, copy_line string, table orders.Table) DataSplitter {
 	log.Println("Start dumping data of table: ", table, " columns: ", copy_line)
 	return &dataSplitter{
 		chunkSize: int64(chunk_size),
-		copyLine: copy_line,
-		table: table,
+		copyLine:  copy_line,
+		table:     table,
 	}
 }
 
@@ -36,10 +36,10 @@ type dataSplitter struct {
 }
 
 func (i *dataSplitter) AddLine(line string) error { // data_split.DataSplitter interface
-	i.buffer = append(i.buffer, line, )
+	i.buffer = append(i.buffer, line)
 	i.currentSize += len(line) + 1
 
-	if i.currentSize > i.currentSize * 1024 {
+	if i.currentSize > i.currentSize*1024 {
 		sort.Sort(i.buffer)
 		return flushBufferToTemp(&i.tempFiles, &i.buffer, &i.currentSize)
 	}
@@ -75,7 +75,7 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 			return err
 		}
 
-		if writer.DataSize() > i.chunkSize * 1024 {
+		if writer.DataSize() > i.chunkSize*1024 {
 			writer.AddLines("\\.")
 			writer.ResetOutput(i.table.FileName(part) + ".sql")
 			writer.AddLines(i.copyLine)
@@ -90,7 +90,6 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 	return nil
 }
 
-
 func flushBufferToTemp(tempFiles *[]string, buffer *buffer, currentBuffer *int) error {
 	tempfile, err := ioutil.TempFile(os.TempDir(), "data.XXXX")
 	if err != nil {
@@ -103,7 +102,7 @@ func flushBufferToTemp(tempFiles *[]string, buffer *buffer, currentBuffer *int) 
 			return err
 		}
 	}
-	*tempFiles = append(*tempFiles, tempfile.Name(), )
+	*tempFiles = append(*tempFiles, tempfile.Name())
 	*buffer = nil
 	*currentBuffer = 0
 	return nil

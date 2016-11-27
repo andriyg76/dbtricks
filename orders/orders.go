@@ -8,7 +8,7 @@ import (
 	"sort"
 	"bytes"
 	"strings"
-	"dbtricks"
+	"github.com/andriyg76/godbtricks/dbtricks"
 )
 
 type Table interface {

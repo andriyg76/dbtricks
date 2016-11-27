@@ -1,10 +1,11 @@
 package dumpsplit
+
 import (
+	"github.com/andriyg76/godbtricks/dbtricks"
+	"github.com/andriyg76/godbtricks/dbtricks/orders"
+	"github.com/andriyg76/godbtricks/dbtricks/writer"
+	"github.com/andriyg76/godbtricks/pg/datasplit"
 	"regexp"
-	"dbtricks/orders"
-	"pg/datasplit"
-	"dbtricks/writer"
-	"dbtricks"
 )
 
 /**
@@ -18,7 +19,7 @@ type Splitter interface {
 	Error() error
 }
 
-var copy_re, data_comment_re, constraint_comment_re *regexp.Regexp;
+var copy_re, data_comment_re, constraint_comment_re *regexp.Regexp
 
 func init() {
 	copy_re = regexp.MustCompile(`^COPY .*? \((.*?)\) FROM stdin;`)
@@ -53,14 +54,14 @@ func match_to_constraint_comment(line string) bool {
 const eot_line = "\\."
 
 type splitter struct {
-	counter        int
-	dumper         writer.Writer
-	table     orders.Table
-	epilogue       bool
-	data_handler   datasplit.DataSplitter
-	chunk_size     int
-	orders         orders.Orders
-	err            error
+	counter      int
+	dumper       writer.Writer
+	table        orders.Table
+	epilogue     bool
+	data_handler datasplit.DataSplitter
+	chunk_size   int
+	orders       orders.Orders
+	err          error
 }
 
 func NewSplitter(orders orders.Orders, chunk_size int) (Splitter, error) {
@@ -69,11 +70,11 @@ func NewSplitter(orders orders.Orders, chunk_size int) (Splitter, error) {
 		return nil, err
 	}
 	return &splitter{
-		counter: 0,
-		dumper: dumper,
-		table: nil,
+		counter:    0,
+		dumper:     dumper,
+		table:      nil,
 		chunk_size: chunk_size,
-		orders: orders,
+		orders:     orders,
 	}, nil
 }
 
