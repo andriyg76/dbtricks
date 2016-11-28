@@ -7,15 +7,21 @@ import (
 	"strings"
 )
 
+const (
+	DUMPTYPE_NONE = Dumptype(-1)
+	DUMPTYPE_MYSQL = Dumptype(iota)
+	DUMPTYPE_PGSQL = Dumptype(iota)
+)
+
+type Dumptype int8
+
 type params struct {
 	destination      string
 	chunkSize        int
 	isVerbose        bool
 	cleanDestination bool
-	isHelp           bool
 	tail             []string
-	error            error
-	set              *flag.FlagSet
+	dumptype         Dumptype
 }
 
 type Params interface {
@@ -23,36 +29,53 @@ type Params interface {
 	ChunkSize() int
 	IsVerbose() bool
 	CleanDestination() bool
-	IsHelp() bool
 	File() string
-	Error() error
 	PrintUsage(file *os.File)
+	Dumptype() Dumptype
 }
 
-func parseParams(args []string) (r_val Params) {
+func parseParams(args []string) (error, *params) {
 	_params := params{
 		chunkSize: 2048,
+		dumptype: -1,
 	}
-	r_val = &_params
+	var dumptype string
+	isHelp := false
 
-	_params.set = flag.NewFlagSet("pgdumpsplit", flag.ContinueOnError)
-	_params.set.StringVar(&_params.destination, "d", "", "Path, where to store splitted files")
-	_params.set.IntVar(&_params.chunkSize, "m", 2048, "Max chunk size of database part, in kb")
-	_params.set.BoolVar(&_params.isVerbose, "v", false, "Verbose dumping output")
-	_params.set.BoolVar(&_params.cleanDestination, "c", false, "Clean destination")
-	_params.set.BoolVar(&_params.isHelp, "h", false, "Help")
+	set := flag.NewFlagSet("pgdumpsplit", flag.ContinueOnError)
+	set.StringVar(&_params.destination, "d", "", "Path, where to store splitted files, default - current folder")
+	set.IntVar(&_params.chunkSize, "m", 2048, "Max chunk size of database part, in kb")
+	set.BoolVar(&_params.isVerbose, "v", false, "Verbose dumping output")
+	set.BoolVar(&_params.cleanDestination, "c", false, "Clean destination")
+	set.StringVar(&dumptype, "t", "", "Dumptype PGSQL|MYSQL")
+	set.BoolVar(&isHelp, "h", false, "Help")
 
-	_params.error = _params.set.Parse(args[1:])
-	if _params.error != nil {
-		return
+	var error = set.Parse(args[1:])
+	if error != nil {
+		return error, nil
 	}
-	_params.tail = _params.set.Args()
+	if (isHelp) {
+		set.PrintDefaults()
+		return nil, nil
+	}
+
+	switch strings.ToUpper(dumptype) {
+	case "":
+		return errors.New("Dumptype is not set"), nil
+	case "PGSQL":
+		_params.dumptype = DUMPTYPE_PGSQL
+		break
+	case "MYSQL":
+		_params.dumptype = DUMPTYPE_PGSQL
+		break
+	default:
+		return errors.New("Dumptype " + dumptype + " is not supported"), nil
+	}
+	_params.tail = set.Args()
 	if len(_params.tail) > 1 {
-		_params.set.PrintDefaults()
-		_params.error = errors.New("Unnecessary params given: " + strings.Join(_params.tail, ", "))
-		return
+		return errors.New("Unnecessary params given: " + strings.Join(_params.tail, ", ")), nil
 	}
-	return
+	return nil, &_params
 }
 
 func (i *params) Destination() string {
@@ -71,23 +94,14 @@ func (i *params) CleanDestination() bool {
 	return i.cleanDestination
 }
 
-func (i *params) IsHelp() bool {
-	return i.isHelp
-}
-
-func (i *params) PrintUsage(file *os.File) {
-	i.set.SetOutput(file)
-	i.set.PrintDefaults()
-}
-
-func (i *params) Error() error {
-	return i.error
-}
-
 func (i *params) File() string {
 	if len(i.tail) == 1 {
 		return i.tail[0]
 	} else {
 		return ""
 	}
+}
+
+func (i *params) Dumptype() Dumptype {
+	return i.dumptype
 }

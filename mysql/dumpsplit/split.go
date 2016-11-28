@@ -3,20 +3,12 @@ package dumpsplit
 import (
 	"github.com/andriyg76/dbtricks/orders"
 	"github.com/andriyg76/dbtricks/writer"
-	"github.com/andriyg76/dbtricks/pg/datasplit"
+	"github.com/andriyg76/dbtricks/mysql/datasplit"
 	"regexp"
+	"github.com/andriyg76/dbtricks/dumper"
 )
 
-/**
- * Created by andriy on 04/12/15.
- */
 
-type Splitter interface {
-	Flush() error
-	Close()
-	HandleLine(line string) error
-	Error() error
-}
 
 var copy_re, data_comment_re, constraint_comment_re *regexp.Regexp
 
@@ -63,7 +55,7 @@ type splitter struct {
 	err          error
 }
 
-func NewSplitter(orders orders.Orders, chunk_size int) (Splitter, error) {
+func NewSplitter(orders orders.Orders, chunk_size int) (dumper.Dumper, error) {
 	dumper, err := writer.NewWriter("0000_prologue.sql")
 	if err != nil {
 		return nil, err

@@ -4,22 +4,23 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/andriyg76/dbtricks/orders"
-	"github.com/andriyg76/dbtricks/pg/dumpsplit"
-	"io"
-	"log"
 	"os"
+	"log"
+	pg_dumpsplit "github.com/andriyg76/dbtricks/pg/dumpsplit"
+	mysql_dumpsplit "github.com/andriyg76/dbtricks/mysql/dumpsplit"
+	"io"
 	"strings"
+	"github.com/andriyg76/dbtricks/dumper"
 )
 
 func main() {
-	params := parseParams(os.Args)
-	if params.Error() != nil {
-		fmt.Fprintln(os.Stderr, "Error parsing params ", params.Error())
+	err, params := parseParams(os.Args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error parsing params ", err)
 		os.Exit(2)
 	}
 
-	if params.IsHelp() {
-		params.PrintUsage(os.Stdout)
+	if params == nil {
 		os.Exit(0)
 	}
 
@@ -43,7 +44,18 @@ func main() {
 	}
 	orders := orders.ReadOrders(params.Destination())
 
-	splitter, _ := dumpsplit.NewSplitter(orders, params.ChunkSize())
+	var splitter dumper.Dumper
+	var error error
+	if (params.Dumptype() == DUMPTYPE_PGSQL) {
+		splitter, error = pg_dumpsplit.NewSplitter(orders, params.ChunkSize())
+	} else if (params.Dumptype() == DUMPTYPE_MYSQL) {
+		splitter, error = mysql_dumpsplit.NewSplitter(orders, params.ChunkSize())
+	} else {
+		log.Fatal("Unsupported dumptype: ", params.Dumptype())
+	}
+	if error != nil {
+		log.Fatal("Can't initialize datasplitter type: ", params.Dumptype())
+	}
 	defer splitter.Close()
 
 	for {

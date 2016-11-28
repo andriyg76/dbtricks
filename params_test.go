@@ -7,13 +7,35 @@ import (
 	"fmt"
 )
 
-func TestParseParams(t *testing.T) {
-	params:= parseParams([]string{os.Args[0], "-h", "file1"})
+func TestParseNoParams(t *testing.T) {
+	err, params := parseParams([]string{os.Args[0]})
 
 	fmt.Fprintln(os.Stderr, params)
-	assert.Equal(t, params.Error(), nil)
 
-	assert.Equal(t, true, params.IsHelp())
+	assert.Error(t, err)
+	assert.Nil(t, params)
+}
+
+
+func TestParseHelp(t *testing.T) {
+	err, params := parseParams([]string{os.Args[0], "-h"})
+
+	fmt.Fprintln(os.Stderr, params)
+
+	assert.Nil(t, err)
+	assert.Nil(t, params)
+}
+
+func TestParseParams(t *testing.T) {
+	err, params := parseParams([]string{os.Args[0], "-t", "pgsql", "-d", "dir", "file1"})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, params)
+
+	fmt.Fprintln(os.Stderr, params)
+
+	assert.Equal(t, DUMPTYPE_PGSQL, params.dumptype)
 
 	assert.Equal(t, "file1", params.File())
+	assert.Equal(t, "dir", params.Destination())
 }
