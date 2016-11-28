@@ -1,4 +1,4 @@
-package params
+package main
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseParams(t *testing.T) {
-	params:= ParseParams([]string{os.Args[0], "-h", "file1"})
+	params:= parseParams([]string{os.Args[0], "-h", "file1"})
 
 	fmt.Fprintln(os.Stderr, params)
 	assert.Equal(t, params.Error(), nil)

@@ -2,9 +2,9 @@ package datasplit
 
 import (
 	"fmt"
-	"github.com/andriyg76/godbtricks/dbtricks/orders"
-	"github.com/andriyg76/godbtricks/dbtricks/writer"
-	"github.com/andriyg76/godbtricks/mergesort"
+	"github.com/andriyg76/dbtricks/orders"
+	"github.com/andriyg76/dbtricks/writer"
+	"github.com/andriyg76/dbtricks/mergesort"
 	"io"
 	"io/ioutil"
 	"log"

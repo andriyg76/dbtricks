@@ -8,7 +8,7 @@ import (
 	"sort"
 	"bytes"
 	"strings"
-	"github.com/andriyg76/godbtricks/dbtricks"
+	"github.com/andriyg76/dbtricks/utils"
 )
 
 type Table interface {
@@ -42,13 +42,13 @@ func (i table) TableOrder() int {
 func (i table) FileName(part int) string {
 	if part == 0 {
 		return fmt.Sprintf("%v_%v",
-			dbtricks.IntInBase(i.tableOrder, 36, 4),
+			utils.IntInBase(i.tableOrder, 36, 4),
 			strings.Replace(i.tableName, ".", "_", 0))
 	} else {
 		return fmt.Sprintf("%v_%v_%v",
-			dbtricks.IntInBase(i.tableOrder, 36, 4),
+			utils.IntInBase(i.tableOrder, 36, 4),
 			strings.Replace(i.tableName, ".", "_", 0),
-			dbtricks.IntInBase(part, 36, 6),
+			utils.IntInBase(part, 36, 6),
 		)
 	}
 }

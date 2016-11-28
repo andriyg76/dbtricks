@@ -1,10 +1,10 @@
 package dumpsplit
 
 import (
-	"github.com/andriyg76/godbtricks/dbtricks"
-	"github.com/andriyg76/godbtricks/dbtricks/orders"
-	"github.com/andriyg76/godbtricks/dbtricks/writer"
-	"github.com/andriyg76/godbtricks/pg/datasplit"
+	"github.com/andriyg76/dbtricks/utils"
+	"github.com/andriyg76/dbtricks/orders"
+	"github.com/andriyg76/dbtricks/writer"
+	"github.com/andriyg76/dbtricks/pg/datasplit"
 	"regexp"
 )
 
@@ -118,7 +118,7 @@ func (i *splitter) HandleLine(line string) error {
 }
 
 func _36_base_int(value int) string {
-	return dbtricks.IntInBase(value, 36, 4)
+	return utils.IntInBase(value, 36, 4)
 }
 
 func (i *splitter) Flush() error {

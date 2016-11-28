@@ -3,9 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/andriyg76/godbtricks/dbtricks/orders"
-	"github.com/andriyg76/godbtricks/dbtricks/params"
-	"github.com/andriyg76/godbtricks/pg/dumpsplit"
+	"github.com/andriyg76/dbtricks/orders"
+	"github.com/andriyg76/dbtricks/pg/dumpsplit"
 	"io"
 	"log"
 	"os"
@@ -13,7 +12,7 @@ import (
 )
 
 func main() {
-	params := params.ParseParams(os.Args)
+	params := parseParams(os.Args)
 	if params.Error() != nil {
 		fmt.Fprintln(os.Stderr, "Error parsing params ", params.Error())
 		os.Exit(2)

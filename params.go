@@ -1,4 +1,4 @@
-package params
+package main
 
 import (
 	"flag"
@@ -29,7 +29,7 @@ type Params interface {
 	PrintUsage(file *os.File)
 }
 
-func ParseParams(args []string) (r_val Params) {
+func parseParams(args []string) (r_val Params) {
 	_params := params{
 		chunkSize: 2048,
 	}

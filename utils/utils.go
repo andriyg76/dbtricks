@@ -1,4 +1,4 @@
-package dbtricks
+package utils
 
 var _conversions = map[int]int{
 	0: '0',
