@@ -5,18 +5,12 @@ import (
 	"github.com/andriyg76/dbtricks/writer"
 	"github.com/andriyg76/dbtricks/pg/datasplit"
 	"regexp"
+	"github.com/andriyg76/dbtricks/splitter"
 )
 
 /**
  * Created by andriy on 04/12/15.
  */
-
-type Splitter interface {
-	Flush() error
-	Close()
-	HandleLine(line string) error
-	Error() error
-}
 
 var copy_re, data_comment_re, constraint_comment_re *regexp.Regexp
 
@@ -52,7 +46,7 @@ func match_to_constraint_comment(line string) bool {
 
 const eot_line = "\\."
 
-type splitter struct {
+type pgSplitter struct {
 	counter      int
 	dumper       writer.Writer
 	table        orders.Table
@@ -63,12 +57,12 @@ type splitter struct {
 	err          error
 }
 
-func NewSplitter(orders orders.Orders, chunk_size int) (Splitter, error) {
+func NewSplitter(orders orders.Orders, chunk_size int) (splitter.Splitter, error) {
 	dumper, err := writer.NewWriter("0000_prologue.sql")
 	if err != nil {
 		return nil, err
 	}
-	return &splitter{
+	return &pgSplitter{
 		counter:    0,
 		dumper:     dumper,
 		table:      nil,
@@ -77,7 +71,7 @@ func NewSplitter(orders orders.Orders, chunk_size int) (Splitter, error) {
 	}, nil
 }
 
-func (i *splitter) HandleLine(line string) error {
+func (i *pgSplitter) HandleLine(line string) error {
 	if i.err != nil {
 		return i.err
 	}
@@ -116,14 +110,14 @@ func (i *splitter) HandleLine(line string) error {
 	return nil
 }
 
-func (i *splitter) Flush() error {
+func (i *pgSplitter) Flush() error {
 	return nil
 }
 
-func (i *splitter) Close() {
+func (i *pgSplitter) Close() {
 
 }
 
-func (i *splitter) Error() error {
+func (i *pgSplitter) Error() error {
 	return i.err
 }

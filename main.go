@@ -10,7 +10,7 @@ import (
 	mysql_dumpsplit "github.com/andriyg76/dbtricks/mysql/dumpsplit"
 	"io"
 	"strings"
-	"github.com/andriyg76/dbtricks/dumper"
+	"github.com/andriyg76/dbtricks/splitter"
 )
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 	}
 	orders := orders.ReadOrders(params.Destination())
 
-	var splitter dumper.Dumper
+	var splitter splitter.Splitter
 	var error error
 	if (params.Dumptype() == DUMPTYPE_PGSQL) {
 		splitter, error = pg_dumpsplit.NewSplitter(orders, params.ChunkSize())
