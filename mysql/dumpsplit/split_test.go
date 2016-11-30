@@ -6,24 +6,17 @@ import (
 
 
 func TestRegexps(t *testing.T) {
-	match := match_to_copy("COPY table (column1, column2, column2) FROM stdin;")
+	match, table_name := match_table_structure("-- Table structure for table `django_site`")
 
 	assert.True(t, match)
+	assert.Equal(t, "django_site", table_name)
 
-	match, table, schema := match_to_data_comment(
-		"-- Data for Name: table; Type: TABLE DATA; Schema: s1;")
+	match, insert_into, table_data := match_table_data(
+		"INSERT INTO `django_site` (`id`, `domain`, `name`) VALUES " +
+			"(1,'http://caritas-kolomyya.org','caritas');")
 
 	assert.True(t, match)
-	assert.Equal(t, table, "table")
-	assert.Equal(t, schema, "s1")
-
-	match = match_to_constraint_comment("-- Name: PK_table; Type: CONSTRAINT; Schema: s1")
-	assert.True(t, match)
-
-	match = match_to_constraint_comment("-- Name: IX_TABLE_COLUMN1; Type: INDEX; Schema: s1")
-	assert.True(t, match)
-
-	match = match_to_constraint_comment("-- Name: IX_TABLE_COLUMN1; Type: SEQUENCE; Schema: s1")
-	assert.False(t, match)
+	assert.Equal(t, insert_into, "INSERT INTO `django_site` (`id`, `domain`, `name`) VALUES")
+	assert.Equal(t, table_data, "1,'http://caritas-kolomyya.org','caritas'")
 }
 

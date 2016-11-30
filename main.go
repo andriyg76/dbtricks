@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/andriyg76/dbtricks/orders"
 	"os"
-	"log"
+	log "github.com/andriyg76/glogger"
 	pg_dumpsplit "github.com/andriyg76/dbtricks/pg/dumpsplit"
 	mysql_dumpsplit "github.com/andriyg76/dbtricks/mysql/dumpsplit"
 	"io"
@@ -24,6 +24,10 @@ func main() {
 		os.Exit(0)
 	}
 
+	if (params.IsVerbose()) {
+		log.SetLevel(log.DEBUG)
+	}
+
 	var file *os.File
 	if params.File() == "" || params.File() == "-" {
 		file = os.Stdin
@@ -31,7 +35,7 @@ func main() {
 		var err error
 		file, err = os.OpenFile(params.File(), os.O_RDONLY, os.ModePerm)
 		if err != nil {
-			log.Fatal("Can't open file ", params.File(), " for read")
+			log.Fatal("Can't open file %s for read", params.File())
 		}
 		defer file.Close()
 	}
@@ -43,13 +47,14 @@ func main() {
 		}
 	}
 	orders := orders.ReadOrders(params.Destination())
+	fmt.Printf("orders %s\n", orders)
 
 	var splitter splitter.Splitter
 	var error error
 	if (params.Dumptype() == DUMPTYPE_PGSQL) {
-		splitter, error = pg_dumpsplit.NewSplitter(orders, params.ChunkSize())
+		splitter, error = pg_dumpsplit.NewSplitter(orders, params.ChunkSize(), log.Default())
 	} else if (params.Dumptype() == DUMPTYPE_MYSQL) {
-		splitter, error = mysql_dumpsplit.NewSplitter(orders, params.ChunkSize())
+		splitter, error = mysql_dumpsplit.NewSplitter(orders, params.ChunkSize(), log.Default())
 	} else {
 		log.Fatal("Unsupported dumptype: ", params.Dumptype())
 	}
@@ -61,6 +66,7 @@ func main() {
 	for {
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
+			log.Debug("EOF")
 			break
 		} else if err != nil {
 			splitter.Close()

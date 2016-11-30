@@ -6,43 +6,41 @@ import (
 	"github.com/andriyg76/dbtricks/mysql/datasplit"
 	"regexp"
 	"github.com/andriyg76/dbtricks/splitter"
+	"github.com/andriyg76/glogger"
 )
 
-
-
-var copy_re, data_comment_re, constraint_comment_re *regexp.Regexp
+var table_structure_re, insert_into_re *regexp.Regexp
 
 func init() {
-	copy_re = regexp.MustCompile(`^COPY .*? \((.*?)\) FROM stdin;`)
-	data_comment_re = regexp.MustCompile(
-		"^-- Data for Name: (?P<table>.*?); Type: TABLE DATA; Schema: (?P<schema>.*?);")
-	constraint_comment_re = regexp.MustCompile("^-- Name: .*; Type: (.*CONSTRAINT|INDEX); Schema: ")
+	table_structure_re = regexp.MustCompile("^-- Table structure for table `(?P<table>.*?)`")
+	insert_into_re = regexp.MustCompile(
+		"^(?P<insert_into>INSERT INTO .* VALUES) \\((?P<data>.*?)\\);$")
 }
 
-func match_to_copy(line string) bool {
-	return copy_re.MatchString(line)
+func match_table_data(line string) (match bool, insert_into, data string) {
+	if !insert_into_re.MatchString(line) {
+		return false, "", ""
+	}
+
+	match = true
+	match_values := insert_into_re.FindStringSubmatch(line)
+	insert_into = match_values[1]
+	data = match_values[2]
+	return
 }
 
-func match_to_data_comment(line string) (match bool, table string, schema string) {
-	if !data_comment_re.MatchString(line) {
+func match_table_structure(line string) (match bool, table string) {
+	if !table_structure_re.MatchString(line) {
 		match = false
 		table = ""
-		schema = ""
 		return
 	}
 
 	match = true
-	match_values := data_comment_re.FindStringSubmatch(line)
+	match_values := table_structure_re.FindStringSubmatch(line)
 	table = match_values[1]
-	schema = match_values[2]
 	return
 }
-
-func match_to_constraint_comment(line string) bool {
-	return constraint_comment_re.MatchString(line)
-}
-
-const eot_line = "\\."
 
 type mysqlSplitter struct {
 	counter      int
@@ -53,10 +51,11 @@ type mysqlSplitter struct {
 	chunk_size   int
 	orders       orders.Orders
 	err          error
+	logger       glogger.Logger
 }
 
-func NewSplitter(orders orders.Orders, chunk_size int) (splitter.Splitter, error) {
-	dumper, err := writer.NewWriter("0000_prologue.sql")
+func NewSplitter(orders orders.Orders, chunk_size int, logger glogger.Logger) (splitter.Splitter, error) {
+	dumper, err := writer.NewWriter("0000_prologue.sql", logger)
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +65,7 @@ func NewSplitter(orders orders.Orders, chunk_size int) (splitter.Splitter, error
 		table:      nil,
 		chunk_size: chunk_size,
 		orders:     orders,
+		logger:     logger,
 	}, nil
 }
 
@@ -74,34 +74,32 @@ func (i *mysqlSplitter) HandleLine(line string) error {
 		return i.err
 	}
 
-	if i.data_handler != nil {
-		if line == eot_line {
-			i.err = i.data_handler.FlushData(i.dumper)
-			if i.err != nil {
-				return i.err
-			}
-			i.data_handler = nil
-		} else {
-			i.err = i.data_handler.AddLine(line)
-			if i.err != nil {
-				return i.err
-			}
-		}
-	} else if i.epilogue || line == "" || line == "--" {
+	if i.epilogue {
 		i.dumper.AddLines(line)
-	} else if match_to_constraint_comment(line) {
-		backup := append(i.dumper.PopLastLine(), line)
-		i.dumper.ResetOutput("zzzz_epilogue.sql")
-		i.dumper.AddLines(backup...)
-		i.epilogue = true
-	} else if match, table, schema := match_to_data_comment(line); match {
-		i.table = i.orders.GetTable(schema + "." + table)
-
-		backup := append(i.dumper.PopLastLine(), line)
+	}
+	if match, table_name := match_table_structure(line); match {
+		i.table = i.orders.GetTable(table_name)
+		backup := i.dumper.PopLastLines(2)
+		if err := i.dumper.Flush(); err != nil {
+			i.err = err
+			return err
+		}
 		i.dumper.ResetOutput(i.table.FileName(0) + ".sql")
 		i.dumper.AddLines(backup...)
-	} else if match_to_copy(line) {
-		i.data_handler = datasplit.NewDataSplitter(i.chunk_size, line, i.table)
+		i.dumper.AddLines(line)
+	} else if match, insert_into, data := match_table_data(line); match {
+		if i.data_handler == nil {
+			start_line := insert_into + "\n"
+			i.data_handler = datasplit.NewDataSplitter(i.chunk_size, start_line, i.table)
+		}
+		i.data_handler.AddLine(data)
+	} else if i.data_handler != nil && line == "\n" {
+	} else if i.data_handler != nil {
+		if err := i.data_handler.FlushData(i.dumper); err != nil {
+			i.err = err
+			return err
+		}
+		i.data_handler = nil
 	} else {
 		i.dumper.AddLines(line)
 	}

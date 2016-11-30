@@ -5,7 +5,7 @@ import (
 	"bufio"
 	"strings"
 	"io"
-	"log"
+	log "github.com/andriyg76/glogger"
 )
 
 type Reader interface {
@@ -71,7 +71,7 @@ func NewAsyncFileReader(file DisposableIoReader) (error, DisposableReader) {
 	go func() {
 		for {
 			line, err := fileRrd.ReadString('\n')
-			log.Printf("Read line: %q error: %v", line, err)
+			log.Debug("Read line: %q error: %v", line, err)
 			line = strings.TrimRight(line, "\n\r")
 			if err == io.EOF && !reader.gotEOF && line != "" {
 				reader.gotEOF = true

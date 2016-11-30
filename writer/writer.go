@@ -4,6 +4,7 @@ import (
 	"os"
 	"errors"
 	"fmt"
+	"github.com/andriyg76/glogger"
 )
 
 type Writer interface {
@@ -16,9 +17,10 @@ type Writer interface {
 	DataSize() int64
 }
 
-func NewWriter(output_file string) (Writer, error) {
+func NewWriter(output_file string, logger glogger.Logger) (Writer, error) {
 	dumper := &dumper{
 		lines: []string{},
+		logger: logger,
 	}
 	err := dumper.setOutput(output_file)
 	if err != nil {
@@ -28,9 +30,10 @@ func NewWriter(output_file string) (Writer, error) {
 }
 
 type dumper struct {
-	lines []string
+	lines       []string
+	logger      glogger.Logger
 	output_file *os.File
-	err error
+	err         error
 }
 
 func (i *dumper) PopLastLine() []string {
@@ -111,6 +114,7 @@ func (i* dumper) ResetOutput(output_file string) error {
 		return i.err
 	}
 	i.Close()
+	i.logger.Debug("Resetting output to %s", output_file)
 	if err := i.setOutput(output_file); err != nil {
 		return err
 	}

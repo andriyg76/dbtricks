@@ -6,6 +6,7 @@ import (
 	"github.com/andriyg76/dbtricks/pg/datasplit"
 	"regexp"
 	"github.com/andriyg76/dbtricks/splitter"
+	"github.com/andriyg76/glogger"
 )
 
 /**
@@ -57,8 +58,8 @@ type pgSplitter struct {
 	err          error
 }
 
-func NewSplitter(orders orders.Orders, chunk_size int) (splitter.Splitter, error) {
-	dumper, err := writer.NewWriter("0000_prologue.sql")
+func NewSplitter(orders orders.Orders, chunk_size int, logger glogger.Logger) (splitter.Splitter, error) {
+	dumper, err := writer.NewWriter("0000_prologue.sql", logger)
 	if err != nil {
 		return nil, err
 	}
