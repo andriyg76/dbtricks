@@ -46,7 +46,6 @@ type mysqlSplitter struct {
 	counter      int
 	dumper       writer.Writer
 	table        orders.Table
-	epilogue     bool
 	data_handler datasplit.DataSplitter
 	chunk_size   int
 	orders       orders.Orders
@@ -71,12 +70,10 @@ func NewSplitter(orders orders.Orders, chunk_size int, logger glogger.Logger) (s
 
 func (i *mysqlSplitter) HandleLine(line string) error {
 	if i.err != nil {
+		i.logger.Trace("Returning error: %s", i.err)
 		return i.err
 	}
 
-	if i.epilogue {
-		i.dumper.AddLines(line)
-	}
 	if match, table_name := match_table_structure(line); match {
 		i.table = i.orders.GetTable(table_name)
 		backup := i.dumper.PopLastLines(2)
@@ -90,17 +87,20 @@ func (i *mysqlSplitter) HandleLine(line string) error {
 	} else if match, insert_into, data := match_table_data(line); match {
 		if i.data_handler == nil {
 			start_line := insert_into + "\n"
-			i.data_handler = datasplit.NewDataSplitter(i.chunk_size, start_line, i.table)
+			i.data_handler = datasplit.NewDataSplitter(i.chunk_size, start_line, i.table, i.logger)
 		}
 		i.data_handler.AddLine(data)
 	} else if i.data_handler != nil && line == "\n" {
+		i.logger.Trace("Skipping empty line")
 	} else if i.data_handler != nil {
+		i.logger.Trace("Closing data handler")
 		if err := i.data_handler.FlushData(i.dumper); err != nil {
 			i.err = err
 			return err
 		}
 		i.data_handler = nil
 	} else {
+		i.logger.Trace("Append line to dumper: %s", line)
 		i.dumper.AddLines(line)
 	}
 	return nil

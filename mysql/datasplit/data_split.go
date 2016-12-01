@@ -7,9 +7,9 @@ import (
 	"github.com/andriyg76/dbtricks/mergesort"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"sort"
+	"github.com/andriyg76/glogger"
 )
 
 type DataSplitter interface {
@@ -17,12 +17,13 @@ type DataSplitter interface {
 	AddLine(line string) error
 }
 
-func NewDataSplitter(chunk_size int, copy_line string, table orders.Table) DataSplitter {
-	log.Println("Start dumping data of table: ", table, " columns: ", copy_line)
+func NewDataSplitter(chunk_size int, copy_line string, table orders.Table, logger glogger.Logger) DataSplitter {
+	logger.Debug("Start dumping data of table: %s columns: %s ",  table.TableName(), copy_line)
 	return &dataSplitter{
 		chunkSize: int64(chunk_size),
 		copyLine:  copy_line,
 		table:     table,
+		logger: logger,
 	}
 }
 
@@ -32,6 +33,7 @@ type dataSplitter struct {
 	table       orders.Table
 	buffer      buffer
 	currentSize int
+	logger      glogger.Logger
 	tempFiles   []string
 }
 
