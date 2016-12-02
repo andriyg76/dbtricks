@@ -21,7 +21,7 @@ func NewDataSplitter(chunk_size int, copy_line string, table orders.Table, logge
 	logger.Debug("Start dumping data of table: %s columns: %s ",  table.TableName(), copy_line)
 	return &dataSplitter{
 		chunkSize: int64(chunk_size),
-		copyLine:  copy_line,
+		insertLine:  copy_line,
 		table:     table,
 		logger: logger,
 	}
@@ -29,7 +29,7 @@ func NewDataSplitter(chunk_size int, copy_line string, table orders.Table, logge
 
 type dataSplitter struct {
 	chunkSize   int64
-	copyLine    string
+	insertLine  string
 	table       orders.Table
 	buffer      buffer
 	currentSize int
@@ -53,7 +53,6 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 	sort.Sort(i.buffer)
 	part := 1
 
-	writer.AddLines(i.copyLine)
 	readers := []mergesort.Reader{mergesort.NewArrayReader(i.buffer)}
 	for _, row := range i.tempFiles {
 		file, err := os.Open(row)
@@ -69,6 +68,10 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 	}
 
 	sorted := mergesort.MergeSort(lessByFirstOrNextValue, readers...)
+	endChunk := false
+	endBatch := true
+	var chunkSize int64 = 0
+	var batchSize int64 = 0
 	for {
 		err, row := sorted.ReadLine()
 		if err == io.EOF {
@@ -77,17 +80,59 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 			return err
 		}
 
-		if writer.DataSize() > i.chunkSize*1024 {
-			writer.AddLines("\\.")
+		if endChunk {
 			writer.ResetOutput(i.table.FileName(part) + ".sql")
-			writer.AddLines(i.copyLine)
 			part++
+			chunkSize = 0
 		}
 
-		writer.AddLines(row)
+		if endChunk || endBatch {
+			writer.AddLines(i.insertLine)
+			chunkSize += int64(len(i.insertLine))
+			batchSize = int64(len(i.insertLine))
+		}
+
+		endChunk = false
+		endBatch = false
+
+		if chunkSize + int64(len(row)) + 4 >= i.chunkSize {
+			endChunk = true
+		}
+
+
+		if batchSize + int64(len(row)) + 4 >= 5000 {
+			endBatch = true
+		}
+
+		var delimeter string
+		if (endChunk || endBatch) {
+			delimeter = ";"
+		} else {
+			delimeter = ","
+		}
+		writer.AddLines(fmt.Sprintf("(%s)%s", row, delimeter))
+		batchSize += int64(len(row) + 4)
+		chunkSize += int64(len(row) + 4)
+
+		if endBatch || endChunk {
+			if err := writer.Flush(); err != nil {
+				return err
+			}
+		}
+
+		if endChunk {
+			part++
+		}
 	}
 
-	writer.AddLines("\\.")
+	if lines := writer.PopLastLine(); len(lines) > 0 {
+		line := lines[0][0:len(lines[0]) - 1] + ";"
+		writer.AddLines(line)
+	}
+
+	if err := writer.Flush(); err != nil {
+		return err
+	}
 
 	return nil
 }

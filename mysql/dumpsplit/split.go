@@ -86,7 +86,7 @@ func (i *mysqlSplitter) HandleLine(line string) error {
 		i.dumper.AddLines(line)
 	} else if match, insert_into, data := match_table_data(line); match {
 		if i.data_handler == nil {
-			start_line := insert_into + "\n"
+			start_line := insert_into
 			i.data_handler = datasplit.NewDataSplitter(i.chunk_size, start_line, i.table, i.logger)
 		}
 		i.data_handler.AddLine(data)
