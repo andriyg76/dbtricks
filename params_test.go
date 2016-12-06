@@ -13,7 +13,7 @@ func TestParseNoParams(t *testing.T) {
 	fmt.Fprintln(os.Stderr, params)
 
 	assert.Error(t, err)
-	assert.Nil(t, params)
+	assert.NotEqual(t, OK, err)
 }
 
 
@@ -22,8 +22,7 @@ func TestParseHelp(t *testing.T) {
 
 	fmt.Fprintln(os.Stderr, params)
 
-	assert.Nil(t, err)
-	assert.Nil(t, params)
+	assert.Equal(t, OK, err)
 }
 
 func TestParseParams(t *testing.T) {
@@ -37,5 +36,5 @@ func TestParseParams(t *testing.T) {
 	assert.Equal(t, DUMPTYPE_PGSQL, params.dumptype)
 
 	assert.Equal(t, "file1", params.File())
-	assert.Equal(t, "dir", params.Destination())
+	assert.Equal(t, "dir", params.destination)
 }

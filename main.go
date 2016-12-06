@@ -15,21 +15,23 @@ import (
 
 func main() {
 	err, params := parseParams(os.Args)
-	if err != nil {
+	if err == OK {
+		os.Exit(0)
+	} else if err != nil {
 		fmt.Fprintln(os.Stderr, "Error parsing params ", err)
 		os.Exit(2)
 	}
 
-	if params == nil {
-		os.Exit(0)
-	}
-
-	if (params.IsVerbose()) {
+	if params.trace {
+		log.SetLevel(log.TRACE)
+	} else if params.verbose {
 		log.SetLevel(log.DEBUG)
 	}
+	log.Debug("Params %s", params)
 
 	var file *os.File
 	if params.File() == "" || params.File() == "-" {
+		log.Trace("Reading stdin")
 		file = os.Stdin
 	} else {
 		var err error
@@ -41,25 +43,25 @@ func main() {
 	}
 	reader := bufio.NewReader(file)
 
-	if params.Destination() != "" {
-		if err := os.Chdir(params.Destination()); err != nil {
-			log.Fatal("Main: Can't change dir to: ", params.Destination())
+	if params.destination != "" {
+		if err := os.Chdir(params.destination); err != nil {
+			log.Fatal("Main: Can't change dir to: ", params.destination)
 		}
 	}
-	orders := orders.ReadOrders(params.Destination())
-	fmt.Printf("orders %s\n", orders)
+	orders := orders.ReadOrders(params.destination)
 
 	var splitter splitter.Splitter
-	var error error
-	if (params.Dumptype() == DUMPTYPE_PGSQL) {
-		splitter, error = pg_dumpsplit.NewSplitter(orders, params.ChunkSize(), log.Default())
-	} else if (params.Dumptype() == DUMPTYPE_MYSQL) {
-		splitter, error = mysql_dumpsplit.NewSplitter(orders, params.ChunkSize(), log.Default())
+	if (params.dumptype == DUMPTYPE_PGSQL) {
+		log.Trace("Creatinc pg dmpsplitter")
+		splitter, err = pg_dumpsplit.NewSplitter(orders, params.chunkSize, log.Default())
+	} else if (params.dumptype == DUMPTYPE_MYSQL) {
+		log.Trace("Creatinc mysql dmpsplitter")
+		splitter, err = mysql_dumpsplit.NewSplitter(orders, params.chunkSize, log.Default())
 	} else {
-		log.Fatal("Unsupported dumptype: ", params.Dumptype())
+		log.Fatal("Unsupported dumptype: ", params.dumptype)
 	}
-	if error != nil {
-		log.Fatal("Can't initialize datasplitter type: ", params.Dumptype())
+	if err != nil {
+		log.Fatal("Can't initialize datasplitter type: %s, error: %s", params.dumptype, err.Error())
 	}
 	defer splitter.Close()
 
@@ -69,14 +71,14 @@ func main() {
 			log.Debug("EOF")
 			break
 		} else if err != nil {
+			log.Fatal("Can't read iput file: %s", err.Error())
 			splitter.Close()
-			log.Fatal("Main: Can't read iput file: " + err.Error())
 		}
 		line = strings.TrimRight(line, "\n\r")
 		err = splitter.HandleLine(line)
 		if err != nil {
 			splitter.Close()
-			log.Fatal("Main: Can't handle line: [" + line + "]: " + err.Error())
+			log.Fatal("Can't handle line: [%s] error: %s", line, err.Error())
 		}
 	}
 	if err := splitter.Error(); err != nil {
@@ -87,7 +89,7 @@ func main() {
 	if !orders.IsEmpty() {
 		err := orders.WriteOrders()
 		if err != nil {
-			panic("Error writing orders: " + err.Error())
+			log.Fatal("Error writing orders: %s", err.Error())
 		}
 	}
 }
