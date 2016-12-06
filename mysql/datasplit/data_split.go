@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/andriyg76/dbtricks/orders"
 	"github.com/andriyg76/dbtricks/writer"
-	"github.com/andriyg76/dbtricks/mergesort"
+	"github.com/andriyg76/mergesort"
 	"io"
 	"io/ioutil"
 	"log"
