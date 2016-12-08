@@ -67,7 +67,7 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 		defer reader.Close()
 	}
 
-	sorted := mergesort.MergeSort(lessByFirstOrNextValue, readers...)
+	sorted := mergesort.MergeSort(lessByFirstOrNextValue, i.logger.TraceLogger(), readers...)
 	endChunk := false
 	endBatch := true
 	var chunkSize int64 = 0
