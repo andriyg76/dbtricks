@@ -72,15 +72,14 @@ func main() {
 			break
 		} else if err != nil {
 			log.Fatal("Can't read iput file: %s", err.Error())
-			splitter.Close()
 		}
 		line = strings.TrimRight(line, "\n\r")
 		err = splitter.HandleLine(line)
 		if err != nil {
-			splitter.Close()
 			log.Fatal("Can't handle line: [%s] error: %s", line, err.Error())
 		}
 	}
+	splitter.Flush()
 	if err := splitter.Error(); err != nil {
 		splitter.Close()
 		log.Fatal("Error reading input file: ", err)

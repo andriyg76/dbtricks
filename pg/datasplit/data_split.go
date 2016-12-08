@@ -7,9 +7,9 @@ import (
 	"github.com/andriyg76/mergesort"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"sort"
+	"github.com/andriyg76/glogger"
 )
 
 type DataSplitter interface {
@@ -17,12 +17,13 @@ type DataSplitter interface {
 	AddLine(line string) error
 }
 
-func NewDataSplitter(chunk_size int, copy_line string, table orders.Table) DataSplitter {
-	log.Println("Start dumping data of table: ", table, " columns: ", copy_line)
+func NewDataSplitter(chunk_size int, copy_line string, table orders.Table, logger glogger.Logger) DataSplitter {
+	logger.Debug("Start dumping data of table: ", table, " columns: ", copy_line)
 	return &dataSplitter{
 		chunkSize: int64(chunk_size),
 		copyLine:  copy_line,
 		table:     table,
+		logger:    logger,
 	}
 }
 
@@ -33,13 +34,15 @@ type dataSplitter struct {
 	buffer      buffer
 	currentSize int
 	tempFiles   []string
+	logger      glogger.Logger
 }
 
-func (i *dataSplitter) AddLine(line string) error { // data_split.DataSplitter interface
+func (i *dataSplitter) AddLine(line string) error {
+	// data_split.DataSplitter interface
 	i.buffer = append(i.buffer, line)
 	i.currentSize += len(line) + 1
 
-	if i.currentSize > i.currentSize*1024 {
+	if i.currentSize > i.currentSize * 1024 {
 		sort.Sort(i.buffer)
 		return flushBufferToTemp(&i.tempFiles, &i.buffer, &i.currentSize)
 	}
@@ -58,7 +61,7 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 		if err != nil {
 			return err
 		}
-		err, reader := mergesort.NewAsyncFileReader(file)
+		err, reader := mergesort.NewAsyncFileReader(file, i.logger.TraceLogger())
 		if err != nil {
 			return err
 		}
@@ -75,7 +78,7 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 			return err
 		}
 
-		if writer.DataSize() > i.chunkSize*1024 {
+		if writer.DataSize() > i.chunkSize * 1024 {
 			writer.AddLines("\\.")
 			writer.ResetOutput(i.table.FileName(part) + ".sql")
 			writer.AddLines(i.copyLine)

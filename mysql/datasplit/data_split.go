@@ -59,7 +59,7 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 		if err != nil {
 			return err
 		}
-		err, reader := mergesort.NewAsyncFileReader(file)
+		err, reader := mergesort.NewAsyncFileReader(file, i.logger.TraceLogger())
 		if err != nil {
 			return err
 		}

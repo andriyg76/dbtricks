@@ -56,6 +56,7 @@ type pgSplitter struct {
 	chunk_size   int
 	orders       orders.Orders
 	err          error
+	logger       glogger.Logger
 }
 
 func NewSplitter(orders orders.Orders, chunk_size int, logger glogger.Logger) (splitter.Splitter, error) {
@@ -69,6 +70,7 @@ func NewSplitter(orders orders.Orders, chunk_size int, logger glogger.Logger) (s
 		table:      nil,
 		chunk_size: chunk_size,
 		orders:     orders,
+		logger:     logger,
 	}, nil
 }
 
@@ -104,7 +106,7 @@ func (i *pgSplitter) HandleLine(line string) error {
 		i.dumper.ResetOutput(i.table.FileName(0) + ".sql")
 		i.dumper.AddLines(backup...)
 	} else if match_to_copy(line) {
-		i.data_handler = datasplit.NewDataSplitter(i.chunk_size, line, i.table)
+		i.data_handler = datasplit.NewDataSplitter(i.chunk_size, line, i.table, i.logger)
 	} else {
 		i.dumper.AddLines(line)
 	}
@@ -112,11 +114,15 @@ func (i *pgSplitter) HandleLine(line string) error {
 }
 
 func (i *pgSplitter) Flush() error {
-	return nil
+	if i.err != nil {
+		return i.err
+	}
+	i.err = i.dumper.Flush()
+	return i.err
 }
 
 func (i *pgSplitter) Close() {
-
+	i.dumper.Close()
 }
 
 func (i *pgSplitter) Error() error {

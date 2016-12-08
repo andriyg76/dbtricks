@@ -107,11 +107,15 @@ func (i *mysqlSplitter) HandleLine(line string) error {
 }
 
 func (i *mysqlSplitter) Flush() error {
-	return nil
+	if i.err != nil {
+		return i.err
+	}
+	i.err = i.dumper.Flush()
+	return i.err
 }
 
 func (i *mysqlSplitter) Close() {
-
+	i.dumper.Close()
 }
 
 func (i *mysqlSplitter) Error() error {
