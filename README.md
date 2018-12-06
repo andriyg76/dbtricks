@@ -1,5 +1,7 @@
 [![Join the chat at https://gitter.im/agushuley/dbtricks](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/agushuley/dbtricks?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+[![Build Status](https://cloud.drone.io/api/badges/andriyg76/godbtricks/status.svg)](https://cloud.drone.io/andriyg76/godbtricks)
+
 Based on ``pgtricks`` project [https://github.com/akaihola/pgtricks]
 
 ``pgdumpsplit`` ``mydumpsplit`` are a handy scripts for pre-processing PostgreSQL's and MySQL's
