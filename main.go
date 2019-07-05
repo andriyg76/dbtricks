@@ -3,14 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
+	mysqldumpsplit "github.com/andriyg76/dbtricks/mysql/dumpsplit"
 	"github.com/andriyg76/dbtricks/orders"
-	"os"
-	log "github.com/andriyg76/glogger"
-	pg_dumpsplit "github.com/andriyg76/dbtricks/pg/dumpsplit"
-	mysql_dumpsplit "github.com/andriyg76/dbtricks/mysql/dumpsplit"
-	"io"
-	"strings"
+	pgdumpsplit "github.com/andriyg76/dbtricks/pg/dumpsplit"
 	"github.com/andriyg76/dbtricks/splitter"
+	log "github.com/andriyg76/glogger"
+	"io"
+	"os"
+	"strings"
 )
 
 func main() {
@@ -51,12 +51,12 @@ func main() {
 	orders := orders.ReadOrders(params.destination)
 
 	var splitter splitter.Splitter
-	if (params.dumptype == DUMPTYPE_PGSQL) {
+	if (params.dumptype == Pgsql) {
 		log.Trace("Creatinc pg dmpsplitter")
-		splitter, err = pg_dumpsplit.NewSplitter(orders, params.chunkSize, log.Default())
-	} else if (params.dumptype == DUMPTYPE_MYSQL) {
+		splitter, err = pgdumpsplit.NewSplitter(orders, params.chunkSize, log.Default())
+	} else if (params.dumptype == Mysql) {
 		log.Trace("Creatinc mysql dmpsplitter")
-		splitter, err = mysql_dumpsplit.NewSplitter(orders, params.chunkSize, log.Default())
+		splitter, err = mysqldumpsplit.NewSplitter(orders, params.chunkSize, log.Default())
 	} else {
 		log.Fatal("Unsupported dumptype: ", params.dumptype)
 	}

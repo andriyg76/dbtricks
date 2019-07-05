@@ -1,26 +1,26 @@
 package datasplit
 
 import (
-	"testing"
-	"sort"
 	"github.com/stretchr/testify/assert"
+	"sort"
+	"testing"
 )
 
 func TestHeadAndValueAscent(t *testing.T) {
-	err, value, other := first_value_and_other("11, 'tw\\'oo', ''")
+	err, value, other := firstValueAndOther("11, 'tw\\'oo', ''")
 	t.Logf("value=%s tail=%s", value, other)
 
 	assert.NoError(t, err)
 	assert.Equal(t, value, "11")
 	assert.Equal(t, other, "'tw\\'oo', ''")
 
-	err, value, other = first_value_and_other(other)
+	err, value, other = firstValueAndOther(other)
 	t.Logf("value=%s tail=%s", value, other)
 	assert.NoError(t, err)
 	assert.Equal(t, value, "tw\\'oo")
 	assert.Equal(t, other, "''")
 
-	err, value, other = first_value_and_other(other)
+	err, value, other = firstValueAndOther(other)
 	t.Logf("value=%s tail=%s", value, other)
 	assert.NoError(t, err)
 	assert.Equal(t, value, "")
@@ -28,14 +28,14 @@ func TestHeadAndValueAscent(t *testing.T) {
 }
 
 func TestHeadAndValue(t *testing.T) {
-	err, value, other := first_value_and_other("11, 'three'")
+	err, value, other := firstValueAndOther("11, 'three'")
 	t.Logf("value=%s tail=%s", value, other)
 
 	assert.NoError(t, err)
 	assert.Equal(t, value, "11")
 	assert.Equal(t, other, "'three'")
 
-	err, value, other = first_value_and_other(other)
+	err, value, other = firstValueAndOther(other)
 	t.Logf("value=%s tail=%s", value, other)
 	assert.NoError(t, err)
 	assert.Equal(t, value, "three")

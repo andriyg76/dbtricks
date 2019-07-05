@@ -39,30 +39,30 @@ var _conversions = map[int]int{
 	35: 'z',
 }
 
-func IntInBase(value, base int, min_with int) string {
+func IntInBase(value, base int, minWith int) string {
 	if base < 2 || base > 36 {
 		panic("int_in_base: Support positional systems from 2 to 36 only")
 	}
 
-	new_num_string := ""
+	newNumString := ""
 	current := value
 	for {
 		remainder := current % base
 		if remainder < 0 {
 			remainder = -remainder
 		}
-		new_num_string = string(_conversions[remainder]) + new_num_string
+		newNumString = string(_conversions[remainder]) + newNumString
 		current = current / base
 		if current == 0 {
 			break;
 		}
 	}
 
-	for len(new_num_string) < min_with {
-		new_num_string = "0" + new_num_string
+	for len(newNumString) < minWith {
+		newNumString = "0" + newNumString
 	}
 	if value < 0 {
-		new_num_string = "-" + new_num_string
+		newNumString = "-" + newNumString
 	}
-	return new_num_string
+	return newNumString
 }

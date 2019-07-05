@@ -1,8 +1,8 @@
 package orders
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestOrdersRead(t *testing.T)  {
@@ -20,7 +20,7 @@ func TestOrdersFirst(t *testing.T) {
 	_orders := emptyOrders("")
 
 	order := _orders.GetTableOrder("first")
-	assert.Equal(t, order, tables_increment)
+	assert.Equal(t, order, tablesIncrement)
 }
 
 func TestBeforeFirst(t *testing.T) {
@@ -34,7 +34,7 @@ func TestAppendLast(t *testing.T) {
 	_orders := emptyOrders("").addTable("first", 50)
 
 	order := _orders.GetTableOrder("last")
-	assert.Equal(t, order, 50 + tables_increment)
+	assert.Equal(t, order, 50 +tablesIncrement)
 }
 
 func TestInsertBetween(t *testing.T) {

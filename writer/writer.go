@@ -1,28 +1,28 @@
 package writer
 
 import (
-	"os"
 	"errors"
 	"fmt"
 	"github.com/andriyg76/glogger"
+	"os"
 )
 
 type Writer interface {
 	AddLines(line... string)
 	PopLastLine() []string
 	PopLastLines(count int) []string
-	ResetOutput(output_file string) error
+	ResetOutput(outputFile string) error
 	Flush() error
 	Close()
 	DataSize() int64
 }
 
-func NewWriter(output_file string, logger glogger.Logger) (Writer, error) {
+func NewWriter(outputFile string, logger glogger.Logger) (Writer, error) {
 	dumper := &dumper{
 		lines: []string{},
 		logger: logger,
 	}
-	err := dumper.setOutput(output_file)
+	err := dumper.setOutput(outputFile)
 	if err != nil {
 		return nil, err
 	}
@@ -30,10 +30,10 @@ func NewWriter(output_file string, logger glogger.Logger) (Writer, error) {
 }
 
 type dumper struct {
-	lines       []string
-	logger      glogger.Logger
-	output_file *os.File
-	err         error
+	lines      []string
+	logger     glogger.Logger
+	outputFile *os.File
+	err        error
 }
 
 func (i *dumper) PopLastLine() []string {
@@ -56,16 +56,16 @@ func (i *dumper) PopLastLines(count int) []string {
 	return nil
 }
 
-func (i* dumper) setOutput(file_name string) error {
+func (i* dumper) setOutput(fileName string) error {
 	if i.err != nil {
 		return i.err
 	}
 
-	if i.output_file != nil {
+	if i.outputFile != nil {
 		return errors.New("setOutput: Dumper have already output_file defined")
 	}
 
-	i.output_file, i.err = os.OpenFile(file_name, os.O_CREATE | os.O_TRUNC | os.O_RDWR, os.ModePerm)
+	i.outputFile, i.err = os.OpenFile(fileName, os.O_CREATE | os.O_TRUNC | os.O_RDWR, os.ModePerm)
 	if i.err != nil {
 		return i.err
 	}
@@ -79,11 +79,11 @@ func (i* dumper) Flush() error {
 	}
 
 	if i.lines != nil {
-		if i.output_file == nil {
-			return errors.New("Flush: Dumper output file is not set")
+		if i.outputFile == nil {
+			return errors.New("Flush: Dumper output file is not set.")
 		}
 		for _, line := range i.lines {
-			_, i.err = fmt.Fprintln(i.output_file, line)
+			_, i.err = fmt.Fprintln(i.outputFile, line)
 			if i.err != nil {
 				return i.err
 			}
@@ -94,9 +94,9 @@ func (i* dumper) Flush() error {
 }
 
 func (i* dumper) Close() {
-	if i.output_file != nil {
-		i.output_file.Close()
-		i.output_file = nil
+	if i.outputFile != nil {
+		i.outputFile.Close()
+		i.outputFile = nil
 	}
 	i.lines = nil
 	i.err = nil
@@ -106,7 +106,7 @@ func (i* dumper) AddLines(lines... string)  {
 	i.lines = append(i.lines, lines...)
 }
 
-func (i* dumper) ResetOutput(output_file string) error {
+func (i* dumper) ResetOutput(outputFile string) error {
 	if i.err != nil {
 		return i.err
 	}
@@ -114,8 +114,8 @@ func (i* dumper) ResetOutput(output_file string) error {
 		return i.err
 	}
 	i.Close()
-	i.logger.Debug("Resetting output to %s", output_file)
-	if err := i.setOutput(output_file); err != nil {
+	i.logger.Debug("Resetting output to %s", outputFile)
+	if err := i.setOutput(outputFile); err != nil {
 		return err
 	}
 	return nil

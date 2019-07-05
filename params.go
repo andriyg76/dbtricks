@@ -1,16 +1,16 @@
 package main
 
 import (
-	"flag"
 	"errors"
-	"strings"
+	"flag"
 	"fmt"
+	"strings"
 )
 
 const (
-	DUMPTYPE_NONE Dumptype = -1
-	DUMPTYPE_MYSQL Dumptype = iota
-	DUMPTYPE_PGSQL Dumptype = iota
+	None  Dumptype = -1
+	Mysql Dumptype = iota
+	Pgsql Dumptype = iota
 )
 
 type Dumptype int8
@@ -26,20 +26,20 @@ type params struct {
 	dumptype         Dumptype
 }
 
-func (params params) String() string {
+func (i params) String() string {
 	logLevel := "warn"
-	if params.trace  {
+	if i.trace  {
 		logLevel = "trace"
-	} else if params.verbose  {
+	} else if i.verbose  {
 		logLevel = "verbose"
 	}
 	return fmt.Sprintf("destination=%v chunkSize=%v logLevel=%v cleanDestination=%v dumptype=%v input=%v",
-		params.destination,
-		params.chunkSize,
+		i.destination,
+		i.chunkSize,
 		logLevel,
-		params.cleanDestination,
-		params.dumptype,
-		params.tail,
+		i.cleanDestination,
+		i.dumptype,
+		i.tail,
 	)
 }
 
@@ -73,12 +73,12 @@ func parseParams(args []string) (error, params) {
 
 	switch strings.ToUpper(dumptype) {
 	case "":
-		return errors.New("Dumptype is not set"), _params
+		return errors.New("Dumptype is not set."), _params
 	case "PGSQL":
-		_params.dumptype = DUMPTYPE_PGSQL
+		_params.dumptype = Pgsql
 		break
 	case "MYSQL":
-		_params.dumptype = DUMPTYPE_MYSQL
+		_params.dumptype = Mysql
 		break
 	default:
 		return errors.New("Dumptype " + dumptype + " is not supported"), _params

@@ -1,9 +1,9 @@
 package datasplit
 
 import (
-	"testing"
-	"sort"
 	"github.com/stretchr/testify/assert"
+	"sort"
+	"testing"
 )
 
 

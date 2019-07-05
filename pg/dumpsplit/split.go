@@ -2,32 +2,32 @@ package dumpsplit
 
 import (
 	"github.com/andriyg76/dbtricks/orders"
-	"github.com/andriyg76/dbtricks/writer"
 	"github.com/andriyg76/dbtricks/pg/datasplit"
-	"regexp"
 	"github.com/andriyg76/dbtricks/splitter"
+	"github.com/andriyg76/dbtricks/writer"
 	"github.com/andriyg76/glogger"
+	"regexp"
 )
 
 /**
  * Created by andriy on 04/12/15.
  */
 
-var copy_re, data_comment_re, constraint_comment_re *regexp.Regexp
+var copyRe, dataCommentRe, constraintCommentRe *regexp.Regexp
 
 func init() {
-	copy_re = regexp.MustCompile(`^COPY .*? \((.*?)\) FROM stdin;`)
-	data_comment_re = regexp.MustCompile(
+	copyRe = regexp.MustCompile(`^COPY .*? \((.*?)\) FROM stdin;`)
+	dataCommentRe = regexp.MustCompile(
 		"^-- Data for Name: (?P<table>.*?); Type: TABLE DATA; Schema: (?P<schema>.*?);")
-	constraint_comment_re = regexp.MustCompile("^-- Name: .*; Type: (.*CONSTRAINT|INDEX); Schema: ")
+	constraintCommentRe = regexp.MustCompile("^-- Name: .*; Type: (.*CONSTRAINT|INDEX); Schema: ")
 }
 
-func match_to_copy(line string) bool {
-	return copy_re.MatchString(line)
+func matchToCopy(line string) bool {
+	return copyRe.MatchString(line)
 }
 
-func match_to_data_comment(line string) (match bool, table string, schema string) {
-	if !data_comment_re.MatchString(line) {
+func matchToDataComment(line string) (match bool, table string, schema string) {
+	if !dataCommentRe.MatchString(line) {
 		match = false
 		table = ""
 		schema = ""
@@ -35,42 +35,42 @@ func match_to_data_comment(line string) (match bool, table string, schema string
 	}
 
 	match = true
-	match_values := data_comment_re.FindStringSubmatch(line)
-	table = match_values[1]
-	schema = match_values[2]
+	matchValues := dataCommentRe.FindStringSubmatch(line)
+	table = matchValues[1]
+	schema = matchValues[2]
 	return
 }
 
-func match_to_constraint_comment(line string) bool {
-	return constraint_comment_re.MatchString(line)
+func matchToConstraintComment(line string) bool {
+	return constraintCommentRe.MatchString(line)
 }
 
-const eot_line = "\\."
+const eotLine = "\\."
 
 type pgSplitter struct {
-	counter      int
-	dumper       writer.Writer
-	table        orders.Table
-	epilogue     bool
-	data_handler datasplit.DataSplitter
-	chunk_size   int
-	orders       orders.Orders
-	err          error
-	logger       glogger.Logger
+	counter     int
+	dumper      writer.Writer
+	table       orders.Table
+	epilogue    bool
+	dataHandler datasplit.DataSplitter
+	chunkSize   int
+	orders      orders.Orders
+	err         error
+	logger      glogger.Logger
 }
 
-func NewSplitter(orders orders.Orders, chunk_size int, logger glogger.Logger) (splitter.Splitter, error) {
+func NewSplitter(orders orders.Orders, chunkSize int, logger glogger.Logger) (splitter.Splitter, error) {
 	dumper, err := writer.NewWriter("0000_prologue.sql", logger)
 	if err != nil {
 		return nil, err
 	}
 	return &pgSplitter{
-		counter:    0,
-		dumper:     dumper,
-		table:      nil,
-		chunk_size: chunk_size,
-		orders:     orders,
-		logger:     logger,
+		counter:   0,
+		dumper:    dumper,
+		table:     nil,
+		chunkSize: chunkSize,
+		orders:    orders,
+		logger:    logger,
 	}, nil
 }
 
@@ -79,34 +79,34 @@ func (i *pgSplitter) HandleLine(line string) error {
 		return i.err
 	}
 
-	if i.data_handler != nil {
-		if line == eot_line {
-			i.err = i.data_handler.FlushData(i.dumper)
+	if i.dataHandler != nil {
+		if line == eotLine {
+			i.err = i.dataHandler.FlushData(i.dumper)
 			if i.err != nil {
 				return i.err
 			}
-			i.data_handler = nil
+			i.dataHandler = nil
 		} else {
-			i.err = i.data_handler.AddLine(line)
+			i.err = i.dataHandler.AddLine(line)
 			if i.err != nil {
 				return i.err
 			}
 		}
 	} else if i.epilogue || line == "" || line == "--" {
 		i.dumper.AddLines(line)
-	} else if match_to_constraint_comment(line) {
+	} else if matchToConstraintComment(line) {
 		backup := append(i.dumper.PopLastLine(), line)
 		i.dumper.ResetOutput("zzzz_epilogue.sql")
 		i.dumper.AddLines(backup...)
 		i.epilogue = true
-	} else if match, table, schema := match_to_data_comment(line); match {
+	} else if match, table, schema := matchToDataComment(line); match {
 		i.table = i.orders.GetTable(schema + "." + table)
 
 		backup := append(i.dumper.PopLastLine(), line)
 		i.dumper.ResetOutput(i.table.FileName(0) + ".sql")
 		i.dumper.AddLines(backup...)
-	} else if match_to_copy(line) {
-		i.data_handler = datasplit.NewDataSplitter(i.chunk_size, line, i.table, i.logger)
+	} else if matchToCopy(line) {
+		i.dataHandler = datasplit.NewDataSplitter(i.chunkSize, line, i.table, i.logger)
 	} else {
 		i.dumper.AddLines(line)
 	}

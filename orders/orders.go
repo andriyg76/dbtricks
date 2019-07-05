@@ -1,14 +1,14 @@
 package orders
 
 import (
-	"os"
-	"io/ioutil"
-	"fmt"
-	"encoding/json"
-	"sort"
 	"bytes"
-	"strings"
+	"encoding/json"
+	"fmt"
 	"github.com/andriyg76/dbtricks/utils"
+	"io/ioutil"
+	"os"
+	"sort"
+	"strings"
 )
 
 type Table interface {
@@ -58,7 +58,7 @@ type orders struct {
 	targetDir string
 }
 
-const tables_increment int = 36 * 8
+const tablesIncrement int = 36 * 8
 
 func (i orders) addTable(tableName string, tableOrder int) orders {
 	var _orders orders = i
@@ -88,21 +88,21 @@ func (i *orders) GetTable(tableName string) Table  {
 	last := int(0)
 	for _, k := range keys {
 		if k > tableName {
-			new_table := table{
+			newTable := table{
 				tableName: tableName,
 				tableOrder: (last + i.orders[k].tableOrder) / 2,
 			}
-			i.orders[tableName] = new_table
-			return new_table
+			i.orders[tableName] = newTable
+			return newTable
 		}
 		last = i.orders[k].tableOrder
 	}
-	new_table := table{
+	newTable := table{
 		tableName: tableName,
-		tableOrder: last + tables_increment,
+		tableOrder: last + tablesIncrement,
 	}
-	i.orders[tableName] = new_table
-	return new_table
+	i.orders[tableName] = newTable
+	return newTable
 }
 
 func (i *orders) GetSchemeTableOrder(scheme string, table string) int {
@@ -113,31 +113,31 @@ func (i *orders) getMap() map[string]table {
 	return i.orders
 }
 
-func emptyOrders(target_dir string) *orders {
+func emptyOrders(targetDir string) *orders {
 	return &orders{
-		orders: map[string]table{},
-		targetDir: target_dir,
+		orders:    map[string]table{},
+		targetDir: targetDir,
 	}
 }
 
-const orders_file_name = ".orders"
+const ordersFileName = ".orders"
 
-func ReadOrders(target_dir string) Orders {
-	jsontext, err := ioutil.ReadFile(orders_file_name)
+func ReadOrders(targetDir string) Orders {
+	jsontext, err := ioutil.ReadFile(ordersFileName)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Fprintln(os.Stderr, "Can't read ", orders_file_name, " file, will use empty orders")
-			return emptyOrders(target_dir)
+			fmt.Fprintln(os.Stderr, "Can't read ", ordersFileName, " file, will use empty orders")
+			return emptyOrders(targetDir)
 		} else {
-			panic("Can't read " + orders_file_name + " " + err.Error())
+			panic("Can't read " + ordersFileName + " " + err.Error())
 		}
 	}
 
-	return readOrders(jsontext, target_dir)
+	return readOrders(jsontext, targetDir)
 }
 
-func readOrders(jsontext []byte, target_dir string) Orders {
-	_orders := emptyOrders(target_dir)
+func readOrders(jsontext []byte, targetDir string) Orders {
+	_orders := emptyOrders(targetDir)
 
 	orders := map[string]int{}
 	err := json.Unmarshal(jsontext, &orders)
@@ -155,7 +155,7 @@ func readOrders(jsontext []byte, target_dir string) Orders {
 	return _orders
 }
 
-var empty_json = []byte("{}")
+var emptyJson = []byte("{}")
 
 func (i *orders) writeOrders() []byte {
 	orders := map[string]int{}
@@ -166,7 +166,7 @@ func (i *orders) writeOrders() []byte {
 	jsonstring, err := json.Marshal(orders)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Can't serialize json: ", i.orders, " :", err.Error())
-		return empty_json
+		return emptyJson
 	}
 	var out = bytes.Buffer{}
 	err = json.Indent(&out, jsonstring, "", "\t")
@@ -180,9 +180,9 @@ func (i *orders) writeOrders() []byte {
 func (i *orders) WriteOrders() error {
 	jsonstring := i.writeOrders()
 
-	err := ioutil.WriteFile(orders_file_name, jsonstring, os.ModePerm)
+	err := ioutil.WriteFile(ordersFileName, jsonstring, os.ModePerm)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Can't write ", orders_file_name, " :", err.Error())
+		fmt.Fprintln(os.Stderr, "Can't write ", ordersFileName, " :", err.Error())
 		return err
 	}
 	return nil

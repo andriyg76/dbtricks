@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/andriyg76/dbtricks/orders"
 	"github.com/andriyg76/dbtricks/writer"
+	"github.com/andriyg76/glogger"
 	"github.com/andriyg76/mergesort"
 	"io"
 	"io/ioutil"
 	"os"
 	"sort"
-	"github.com/andriyg76/glogger"
 )
 
 type DataSplitter interface {
@@ -17,11 +17,11 @@ type DataSplitter interface {
 	AddLine(line string) error
 }
 
-func NewDataSplitter(chunk_size int, copy_line string, table orders.Table, logger glogger.Logger) DataSplitter {
-	logger.Debug("Start dumping data of table: ", table, " columns: ", copy_line)
+func NewDataSplitter(chunkSize int, columnsList string, table orders.Table, logger glogger.Logger) DataSplitter {
+	logger.Debug("Start dumping data of table: ", table, " columns: ", columnsList)
 	return &dataSplitter{
-		chunkSize: int64(chunk_size),
-		copyLine:  copy_line,
+		chunkSize: int64(chunkSize),
+		copyLine:  columnsList,
 		table:     table,
 		logger:    logger,
 	}
@@ -66,7 +66,7 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 			return err
 		}
 		readers = append(readers, reader)
-		defer reader.Close()
+		defer func(i mergesort.DisposableReader){i.Close()} (reader)
 	}
 
 	sorted := mergesort.MergeSort(lessByFirstOrNextValue, i.logger.TraceLogger(), readers...)

@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
-	"github.com/stretchr/testify/assert"
-	"fmt"
 )
 
 func TestParseNoParams(t *testing.T) {
@@ -33,7 +33,7 @@ func TestParseParams(t *testing.T) {
 
 	fmt.Fprintln(os.Stderr, params)
 
-	assert.Equal(t, DUMPTYPE_PGSQL, params.dumptype)
+	assert.Equal(t, Pgsql, params.dumptype)
 
 	assert.Equal(t, "file1", params.File())
 	assert.Equal(t, "dir", params.destination)
