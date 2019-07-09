@@ -2,9 +2,9 @@ package datasplit
 
 import (
 	"fmt"
-	"github.com/andriyg76/dbtricks/orders"
-	"github.com/andriyg76/dbtricks/writer"
 	"github.com/andriyg76/glogger"
+	"github.com/andriyg76/godbtricks/orders"
+	"github.com/andriyg76/godbtricks/writer"
 	"github.com/andriyg76/mergesort"
 	"io"
 	"io/ioutil"
@@ -18,7 +18,7 @@ type DataSplitter interface {
 }
 
 func NewDataSplitter(chunkSize int, insertLine string, table orders.Table, logger glogger.Logger) DataSplitter {
-	logger.Debug("Start dumping data of table: %s columns: %s ",  table.TableName(), insertLine)
+	logger.Debug("Start dumping data of table: %s columns: %s ", table.TableName(), insertLine)
 	return &dataSplitter{
 		chunkSize:  int64(chunkSize),
 		insertLine: insertLine,
@@ -54,17 +54,23 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 	part := 1
 
 	readers := []mergesort.Reader{mergesort.NewArrayReader(i.buffer)}
+	var files []*os.File
+	defer func() {
+		for _, row := range files {
+			_ = row.Close()
+		}
+	}()
 	for _, row := range i.tempFiles {
 		file, err := os.Open(row)
 		if err != nil {
 			return err
 		}
+		files = append(files, file)
 		err, reader := mergesort.NewAsyncFileReader(file, i.logger.TraceLogger())
 		if err != nil {
 			return err
 		}
 		readers = append(readers, reader)
-		defer func(i mergesort.DisposableReader){i.Close()} (reader)
 	}
 
 	sorted := mergesort.MergeSort(lessByFirstOrNextValue, i.logger.TraceLogger(), readers...)
@@ -81,7 +87,9 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 		}
 
 		if endChunk {
-			writer.ResetOutput(i.table.FileName(part) + ".sql")
+			if err = writer.ResetOutput(i.table.FileName(part) + ".sql"); err != nil {
+				return err
+			}
 			part++
 			chunkSize = 0
 		}
@@ -95,17 +103,16 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 		endChunk = false
 		endBatch = false
 
-		if chunkSize + int64(len(row)) + 4 >= i.chunkSize {
+		if chunkSize+int64(len(row))+4 >= i.chunkSize {
 			endChunk = true
 		}
 
-
-		if batchSize + int64(len(row)) + 4 >= 5000 {
+		if batchSize+int64(len(row))+4 >= 5000 {
 			endBatch = true
 		}
 
 		var delimeter string
-		if (endChunk || endBatch) {
+		if endChunk || endBatch {
 			delimeter = ";"
 		} else {
 			delimeter = ","
@@ -126,7 +133,7 @@ func (i *dataSplitter) FlushData(writer writer.Writer) error {
 	}
 
 	if lines := writer.PopLastLine(); len(lines) > 0 {
-		line := lines[0][0:len(lines[0]) - 1] + ";"
+		line := lines[0][0:len(lines[0])-1] + ";"
 		writer.AddLines(line)
 	}
 
@@ -142,7 +149,7 @@ func flushBufferToTemp(tempFiles *[]string, buffer *buffer, currentBuffer *int) 
 	if err != nil {
 		return err
 	}
-	defer tempfile.Close()
+	defer func() { _ = tempfile.Close() }()
 	for _, line := range *buffer {
 		_, err = fmt.Println(line)
 		if err != nil {

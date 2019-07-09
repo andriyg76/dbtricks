@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/andriyg76/dbtricks/utils"
+	"github.com/andriyg76/godbtricks/utils"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -43,11 +43,11 @@ func (i table) FileName(part int) string {
 	if part == 0 {
 		return fmt.Sprintf("%v_%v",
 			utils.IntInBase(i.tableOrder, 36, 4),
-			strings.Replace(i.tableName, ".", "_", 0))
+			strings.Replace(i.tableName, ".", "_", -1))
 	} else {
 		return fmt.Sprintf("%v_%v_%v",
 			utils.IntInBase(i.tableOrder, 36, 4),
-			strings.Replace(i.tableName, ".", "_", 0),
+			strings.Replace(i.tableName, ".", "_", -1),
 			utils.IntInBase(part, 36, 6),
 		)
 	}
@@ -61,25 +61,24 @@ type orders struct {
 const tablesIncrement int = 36 * 8
 
 func (i orders) addTable(tableName string, tableOrder int) orders {
-	var _orders orders = i
-	_orders.orders[tableName] = table{
-		tableName: tableName,
+	i.orders[tableName] = table{
+		tableName:  tableName,
 		tableOrder: tableOrder,
 	}
-	return _orders
+	return i
 }
 
 func (i *orders) GetTableOrder(tableName string) int {
 	return i.GetTable(tableName).TableOrder()
 }
 
-func (i *orders) GetTable(tableName string) Table  {
+func (i *orders) GetTable(tableName string) Table {
 	order, got := i.orders[tableName]
 	if got {
 		return order
 	}
 
-	keys := []string{}
+	var keys []string
 	for k := range i.orders {
 		keys = append(keys, k)
 	}
@@ -89,7 +88,7 @@ func (i *orders) GetTable(tableName string) Table  {
 	for _, k := range keys {
 		if k > tableName {
 			newTable := table{
-				tableName: tableName,
+				tableName:  tableName,
 				tableOrder: (last + i.orders[k].tableOrder) / 2,
 			}
 			i.orders[tableName] = newTable
@@ -98,7 +97,7 @@ func (i *orders) GetTable(tableName string) Table  {
 		last = i.orders[k].tableOrder
 	}
 	newTable := table{
-		tableName: tableName,
+		tableName:  tableName,
 		tableOrder: last + tablesIncrement,
 	}
 	i.orders[tableName] = newTable
@@ -126,7 +125,7 @@ func ReadOrders(targetDir string) Orders {
 	jsontext, err := ioutil.ReadFile(ordersFileName)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Fprintln(os.Stderr, "Can't read ", ordersFileName, " file, will use empty orders")
+			_, _ = fmt.Fprintln(os.Stderr, "Can't read ", ordersFileName, " file, will use empty orders")
 			return emptyOrders(targetDir)
 		} else {
 			panic("Can't read " + ordersFileName + " " + err.Error())
@@ -142,12 +141,12 @@ func readOrders(jsontext []byte, targetDir string) Orders {
 	orders := map[string]int{}
 	err := json.Unmarshal(jsontext, &orders)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Can't parse orders json ", string(jsontext), " :", err.Error())
+		_, _ = fmt.Fprintln(os.Stderr, "Can't parse orders json ", string(jsontext), " :", err.Error())
 	}
 
 	for k, v := range orders {
 		_orders.orders[k] = table{
-			tableName: k,
+			tableName:  k,
 			tableOrder: v,
 		}
 	}
@@ -165,13 +164,13 @@ func (i *orders) writeOrders() []byte {
 
 	jsonstring, err := json.Marshal(orders)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Can't serialize json: ", i.orders, " :", err.Error())
+		_, _ = fmt.Fprintln(os.Stderr, "Can't serialize json: ", i.orders, " :", err.Error())
 		return emptyJson
 	}
 	var out = bytes.Buffer{}
 	err = json.Indent(&out, jsonstring, "", "\t")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Can't reformat json: ", string(jsonstring), " :", err.Error())
+		_, _ = fmt.Fprintln(os.Stderr, "Can't reformat json: ", string(jsonstring), " :", err.Error())
 		return jsonstring
 	}
 	return out.Bytes()
@@ -182,7 +181,7 @@ func (i *orders) WriteOrders() error {
 
 	err := ioutil.WriteFile(ordersFileName, jsonstring, os.ModePerm)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Can't write ", ordersFileName, " :", err.Error())
+		_, _ = fmt.Fprintln(os.Stderr, "Can't write ", ordersFileName, " :", err.Error())
 		return err
 	}
 	return nil

@@ -1,11 +1,11 @@
 package dumpsplit
 
 import (
-	"github.com/andriyg76/dbtricks/orders"
-	"github.com/andriyg76/dbtricks/pg/datasplit"
-	"github.com/andriyg76/dbtricks/splitter"
-	"github.com/andriyg76/dbtricks/writer"
 	"github.com/andriyg76/glogger"
+	"github.com/andriyg76/godbtricks/orders"
+	"github.com/andriyg76/godbtricks/pg/datasplit"
+	"github.com/andriyg76/godbtricks/splitter"
+	"github.com/andriyg76/godbtricks/writer"
 	"regexp"
 )
 
@@ -96,14 +96,18 @@ func (i *pgSplitter) HandleLine(line string) error {
 		i.dumper.AddLines(line)
 	} else if matchToConstraintComment(line) {
 		backup := append(i.dumper.PopLastLine(), line)
-		i.dumper.ResetOutput("zzzz_epilogue.sql")
+		if err := i.dumper.ResetOutput("zzzz_epilogue.sql"); err != nil {
+			return err
+		}
 		i.dumper.AddLines(backup...)
 		i.epilogue = true
 	} else if match, table, schema := matchToDataComment(line); match {
 		i.table = i.orders.GetTable(schema + "." + table)
 
 		backup := append(i.dumper.PopLastLine(), line)
-		i.dumper.ResetOutput(i.table.FileName(0) + ".sql")
+		if err := i.dumper.ResetOutput(i.table.FileName(0) + ".sql"); err != nil {
+			return err
+		}
 		i.dumper.AddLines(backup...)
 	} else if matchToCopy(line) {
 		i.dataHandler = datasplit.NewDataSplitter(i.chunkSize, line, i.table, i.logger)

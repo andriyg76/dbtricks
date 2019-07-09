@@ -3,67 +3,73 @@ package main
 import (
 	"bufio"
 	"fmt"
-	mysqldumpsplit "github.com/andriyg76/dbtricks/mysql/dumpsplit"
-	"github.com/andriyg76/dbtricks/orders"
-	pgdumpsplit "github.com/andriyg76/dbtricks/pg/dumpsplit"
-	"github.com/andriyg76/dbtricks/splitter"
 	log "github.com/andriyg76/glogger"
+	mysqldumpsplit "github.com/andriyg76/godbtricks/mysql/dumpsplit"
+	"github.com/andriyg76/godbtricks/orders"
+	"github.com/andriyg76/godbtricks/params"
+	pgdumpsplit "github.com/andriyg76/godbtricks/pg/dumpsplit"
+	"github.com/andriyg76/godbtricks/splitter"
 	"io"
 	"os"
 	"strings"
 )
 
+//noinspection GoNilness
 func main() {
-	err, params := parseParams(os.Args)
-	if err == OK {
+	err, args := params.ParseParams(os.Args)
+	if err == params.OK {
 		os.Exit(0)
 	} else if err != nil {
-		fmt.Fprintln(os.Stderr, "Error parsing params ", err)
+		_, _ = fmt.Fprintln(os.Stderr, "Error parsing params ", err)
 		os.Exit(2)
 	}
 
-	if params.trace {
+	if args.Trace {
 		log.SetLevel(log.TRACE)
-	} else if params.verbose {
+	} else if args.Verbose {
 		log.SetLevel(log.DEBUG)
 	}
-	log.Debug("Params %s", params)
+	log.Debug("Args %s", args)
 
 	var file *os.File
-	if params.File() == "" || params.File() == "-" {
+	if args.File() == "" || args.File() == "-" {
 		log.Trace("Reading stdin")
 		file = os.Stdin
 	} else {
 		var err error
-		file, err = os.OpenFile(params.File(), os.O_RDONLY, os.ModePerm)
+		file, err = os.OpenFile(args.File(), os.O_RDONLY, os.ModePerm)
 		if err != nil {
-			log.Fatal("Can't open file %s for read", params.File())
+			log.Fatal("Can't open file %s for read", args.File())
+			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 	}
 	reader := bufio.NewReader(file)
 
-	if params.destination != "" {
-		if err := os.Chdir(params.destination); err != nil {
-			log.Fatal("Main: Can't change dir to: ", params.destination)
+	if args.Destination != "" {
+		if err := os.Chdir(args.Destination); err != nil {
+			log.Fatal("Main: Can't change dir to: ", args.Destination)
+			return
 		}
 	}
-	orders := orders.ReadOrders(params.destination)
+	ordersStructure := orders.ReadOrders(args.Destination)
 
-	var splitter splitter.Splitter
-	if (params.dumptype == Pgsql) {
-		log.Trace("Creatinc pg dmpsplitter")
-		splitter, err = pgdumpsplit.NewSplitter(orders, params.chunkSize, log.Default())
-	} else if (params.dumptype == Mysql) {
-		log.Trace("Creatinc mysql dmpsplitter")
-		splitter, err = mysqldumpsplit.NewSplitter(orders, params.chunkSize, log.Default())
+	var dumpSplitter splitter.Splitter
+	if args.DumpType == params.Pgsql {
+		log.Trace("Creating pg dumpsplitter")
+		dumpSplitter, err = pgdumpsplit.NewSplitter(ordersStructure, args.ChunkSize, log.Default())
+	} else if args.DumpType == params.Mysql {
+		log.Trace("Creating mysql dumpsplitter")
+		dumpSplitter, err = mysqldumpsplit.NewSplitter(ordersStructure, args.ChunkSize, log.Default())
 	} else {
-		log.Fatal("Unsupported dumptype: ", params.dumptype)
+		log.Fatal("Unsupported dumptype: ", args.DumpType)
+		return
 	}
 	if err != nil {
-		log.Fatal("Can't initialize datasplitter type: %s, error: %s", params.dumptype, err.Error())
+		log.Fatal("Can't initialize dumpsplitter type: %s, error: %s", args.DumpType, err.Error())
+		return
 	}
-	defer splitter.Close()
+	defer dumpSplitter.Close()
 
 	for {
 		line, err := reader.ReadString('\n')
@@ -72,23 +78,30 @@ func main() {
 			break
 		} else if err != nil {
 			log.Fatal("Can't read iput file: %s", err.Error())
+			return
 		}
 		line = strings.TrimRight(line, "\n\r")
-		err = splitter.HandleLine(line)
+		err = dumpSplitter.HandleLine(line)
 		if err != nil {
 			log.Fatal("Can't handle line: [%s] error: %s", line, err.Error())
+			return
 		}
 	}
-	splitter.Flush()
-	if err := splitter.Error(); err != nil {
-		splitter.Close()
+	if err := dumpSplitter.Flush(); err != nil {
+		log.Fatal("Error flushing datasplitter parts: ", err)
+		return
+	}
+	if err := dumpSplitter.Error(); err != nil {
+		dumpSplitter.Close()
 		log.Fatal("Error reading input file: ", err)
+		return
 	}
 
-	if !orders.IsEmpty() {
-		err := orders.WriteOrders()
+	if !ordersStructure.IsEmpty() {
+		err := ordersStructure.WriteOrders()
 		if err != nil {
 			log.Fatal("Error writing orders: %s", err.Error())
+			return
 		}
 	}
 }

@@ -1,11 +1,11 @@
 package dumpsplit
 
 import (
-	"github.com/andriyg76/dbtricks/mysql/datasplit"
-	"github.com/andriyg76/dbtricks/orders"
-	"github.com/andriyg76/dbtricks/splitter"
-	"github.com/andriyg76/dbtricks/writer"
 	"github.com/andriyg76/glogger"
+	"github.com/andriyg76/godbtricks/mysql/datasplit"
+	"github.com/andriyg76/godbtricks/orders"
+	"github.com/andriyg76/godbtricks/splitter"
+	"github.com/andriyg76/godbtricks/writer"
 	"regexp"
 )
 
@@ -81,7 +81,9 @@ func (i *mysqlSplitter) HandleLine(line string) error {
 			i.err = err
 			return err
 		}
-		i.dumper.ResetOutput(i.table.FileName(0) + ".sql")
+		if err := i.dumper.ResetOutput(i.table.FileName(0) + ".sql"); err != nil {
+			return err
+		}
 		i.dumper.AddLines(backup...)
 		i.dumper.AddLines(line)
 	} else if match, insertInto, data := matchTableData(line); match {
@@ -89,7 +91,9 @@ func (i *mysqlSplitter) HandleLine(line string) error {
 			startLine := insertInto
 			i.dataHandler = datasplit.NewDataSplitter(i.chunkSize, startLine, i.table, i.logger)
 		}
-		i.dataHandler.AddLine(data)
+		if err := i.dataHandler.AddLine(data); err != nil {
+			return err
+		}
 	} else if i.dataHandler != nil && line == "\n" {
 		i.logger.Trace("Skipping empty line")
 	} else if i.dataHandler != nil {

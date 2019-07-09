@@ -8,7 +8,7 @@ import (
 )
 
 type Writer interface {
-	AddLines(line... string)
+	AddLines(line ...string)
 	PopLastLine() []string
 	PopLastLines(count int) []string
 	ResetOutput(outputFile string) error
@@ -19,7 +19,7 @@ type Writer interface {
 
 func NewWriter(outputFile string, logger glogger.Logger) (Writer, error) {
 	dumper := &dumper{
-		lines: []string{},
+		lines:  []string{},
 		logger: logger,
 	}
 	err := dumper.setOutput(outputFile)
@@ -56,7 +56,7 @@ func (i *dumper) PopLastLines(count int) []string {
 	return nil
 }
 
-func (i* dumper) setOutput(fileName string) error {
+func (i *dumper) setOutput(fileName string) error {
 	if i.err != nil {
 		return i.err
 	}
@@ -65,7 +65,7 @@ func (i* dumper) setOutput(fileName string) error {
 		return errors.New("setOutput: Dumper have already output_file defined")
 	}
 
-	i.outputFile, i.err = os.OpenFile(fileName, os.O_CREATE | os.O_TRUNC | os.O_RDWR, os.ModePerm)
+	i.outputFile, i.err = os.OpenFile(fileName, os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
 	if i.err != nil {
 		return i.err
 	}
@@ -73,14 +73,14 @@ func (i* dumper) setOutput(fileName string) error {
 	return nil
 }
 
-func (i* dumper) Flush() error {
+func (i *dumper) Flush() error {
 	if i.err != nil {
 		return i.err
 	}
 
 	if i.lines != nil {
 		if i.outputFile == nil {
-			return errors.New("Flush: Dumper output file is not set.")
+			return errors.New("flush: dumper output file is not set")
 		}
 		for _, line := range i.lines {
 			_, i.err = fmt.Fprintln(i.outputFile, line)
@@ -93,20 +93,20 @@ func (i* dumper) Flush() error {
 	return i.err
 }
 
-func (i* dumper) Close() {
+func (i *dumper) Close() {
 	if i.outputFile != nil {
-		i.outputFile.Close()
+		_ = i.outputFile.Close()
 		i.outputFile = nil
 	}
 	i.lines = nil
 	i.err = nil
 }
 
-func (i* dumper) AddLines(lines... string)  {
+func (i *dumper) AddLines(lines ...string) {
 	i.lines = append(i.lines, lines...)
 }
 
-func (i* dumper) ResetOutput(outputFile string) error {
+func (i *dumper) ResetOutput(outputFile string) error {
 	if i.err != nil {
 		return i.err
 	}
@@ -121,7 +121,7 @@ func (i* dumper) ResetOutput(outputFile string) error {
 	return nil
 }
 
-func (i* dumper) DataSize() int64 {
+func (i *dumper) DataSize() int64 {
 	if i.err != nil {
 		return -1
 	}
