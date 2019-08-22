@@ -1,3 +1,6 @@
 .DS_Store
 /godbtricks
+/godbtricks.exe
 /pkg/
+/.idea/
+godbtricks.iml
